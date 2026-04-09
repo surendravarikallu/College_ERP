@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../@capacitor/share/src/index.ts"],
+  "sourcesContent": ["import { registerPlugin } from '@capacitor/core';\n\nimport type { SharePlugin } from './definitions';\n\nconst Share = registerPlugin<SharePlugin>('Share', {\n  web: () => import('./web').then((m) => new m.ShareWeb()),\n});\n\nexport * from './definitions';\nexport { Share };\n"],
+  "mappings": ";;;;;;AAIA,IAAM,QAAQ,eAA4B,SAAS;EACjD,KAAK,MAAM,OAAO,mBAAO,EAAE,KAAK,CAAC,MAAM,IAAI,EAAE,SAAQ,CAAE;CACxD;",
+  "names": []
+}
