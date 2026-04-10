@@ -1,7 +1,8 @@
 import { prisma } from '../../core/database/prisma.client';
 import { APIError } from '../../core/common/exceptions/api.error';
 import { AuditService } from '../audit/audit.service';
-import { redisClient } from '../../core/cache/redis.service';
+import { CacheManager } from '../../core/cache/cache.manager';
+import PDFDocument from 'pdfkit';
 
 const GRADE_MAP: Record<string, { min: number; points: number }> = {
   'O':  { min: 90, points: 10 },
@@ -23,204 +24,252 @@ function getGrade(percentage: number): { grade: string; points: number } {
 export class MarksService {
 
   /**
-   * Create an exam schedule.
+   * Create an exam session.
    */
   static async createExamSession(data: {
-    subjectId: string; examDate: string; maxMarks: number;
+    name: string; examType: string; semester: number;
+    academicYear: string; startDate: string; endDate: string;
   }) {
-    return prisma.examSchedule.create({
+    return prisma.examSession.create({
       data: {
-        id: `exam-${Date.now()}`,
-        subjectId: data.subjectId,
-        examDate: new Date(data.examDate),
-        maxMarks: data.maxMarks,
-        workflowStatus: 'DRAFT'
+        name: data.name,
+        examType: data.examType,
+        semester: data.semester,
+        academicYear: data.academicYear,
+        startDate: new Date(data.startDate),
+        endDate: new Date(data.endDate),
       },
     });
   }
 
   /**
-   * List exam schedules.
+   * List exam sessions.
    */
-  static async listExamSessions(subjectId?: string) {
+  static async listExamSessions(semester?: number, academicYear?: string) {
     const where: any = {};
-    if (subjectId) where.subjectId = subjectId;
-    return prisma.examSchedule.findMany({ where, orderBy: { examDate: 'desc' } });
+    if (semester) where.semester = semester;
+    if (academicYear) where.academicYear = academicYear;
+    return prisma.examSession.findMany({ where, orderBy: { startDate: 'desc' } });
   }
 
   /**
-   * Enter marks for students in an exam schedule.
+   * Enter marks for students in an exam session.
    */
   static async enterMarks(
     facultyUserId: string,
-    examScheduleId: string,
+    examSessionId: string,
     subjectId: string,
     records: Array<{ studentId: string; marksObtained: number | null; isAbsent?: boolean }>,
     req?: any
   ) {
-    const session = await prisma.examSchedule.findUnique({ where: { id: examScheduleId } });
-    if (!session) throw new APIError('NOT_FOUND', 'Exam schedule not found.');
-    if (session.workflowStatus === 'APPROVED') throw new APIError('FORBIDDEN', 'Exam schedule is locked. Cannot modify marks.');
+    const session = await prisma.examSession.findUnique({ where: { id: examSessionId } });
+    if (!session) throw new APIError('NOT_FOUND', 'Exam session not found.');
+    if (session.isLocked) throw new APIError('FORBIDDEN', 'Exam session is locked. Cannot modify marks.');
 
     // Verify faculty mapping
-    const mapping = await prisma.teachingAllocation.findFirst({
-      where: { FacultyProfile: { userId: facultyUserId }, subjectId },
-    });
-    if (!mapping) throw new APIError('FORBIDDEN', 'You are not mapped to this subject.');
+    const faculty = await (prisma.faculty as any).findUnique({ where: { userId: facultyUserId } });
+    if (faculty) {
+      const mapping = await prisma.facultySubjectMapping.findFirst({
+        where: { facultyId: faculty.id, subjectId, isActive: true } as any,
+      });
+      if (!mapping) throw new APIError('FORBIDDEN', 'You are not mapped to this subject.');
+    }
 
     let entered = 0;
     let updated = 0;
 
     for (const record of records) {
-      if (record.marksObtained !== null && record.marksObtained !== undefined && record.marksObtained > session.maxMarks) {
-        throw new APIError('BAD_REQUEST', `Marks for student ${record.studentId} exceed max marks (${session.maxMarks}).`);
-      }
-
-      const safeMarks = record.marksObtained || 0;
-
-      const existing = await prisma.marksInternal.findUnique({
-        where: { examScheduleId_studentId: { examScheduleId, studentId: record.studentId } },
+      const existing = await prisma.newMark.findUnique({
+        where: { studentId_subjectId_examSessionId: { studentId: record.studentId, subjectId, examSessionId } },
       });
 
+      const data = {
+        marksObtained: record.marksObtained,
+        isAbsent: record.isAbsent || false,
+        enteredById: facultyUserId,
+      };
+
       if (existing) {
-        await prisma.marksInternal.update({
-          where: { id: existing.id },
-          data: {
-            marksObtained: safeMarks,
-          },
-        });
+        await prisma.newMark.update({ where: { id: existing.id }, data });
         updated++;
       } else {
-        await prisma.marksInternal.create({
-          data: {
-            id: `mi-${Date.now()}-${entered}`,
-            studentId: record.studentId,
-            examScheduleId,
-            marksObtained: safeMarks,
-          },
+        await prisma.newMark.create({
+          data: { studentId: record.studentId, subjectId, examSessionId, ...data },
         });
         entered++;
       }
     }
 
-    await AuditService.log(facultyUserId, 'MARKS_ENTRY', 'MarksInternal', examScheduleId, null, { subjectId, entered, updated }, req);
-
-    try { await redisClient.del(`marks:${examScheduleId}:${subjectId}`); } catch {}
+    await AuditService.log(facultyUserId, 'MARKS_ENTRY', 'NewMark', examSessionId,
+      null, { subjectId, entered, updated }, req);
 
     return { entered, updated, total: entered + updated };
   }
 
   /**
-   * Get marks for a session.
+   * Get marks for an exam session.
    */
-  static async getMarks(examScheduleId: string) {
-    const marks = await prisma.marksInternal.findMany({
-      where: { examScheduleId },
+  static async getMarks(examSessionId: string, subjectId?: string) {
+    const where: any = { examSessionId };
+    if (subjectId) where.subjectId = subjectId;
+
+    return prisma.newMark.findMany({
+      where,
       include: {
-        ExamSchedule: true
-      }
+        student: { select: { id: true, name: true, rollNumber: true } },
+        subject: { select: { id: true, name: true, code: true } },
+      },
+      orderBy: { student: { rollNumber: 'asc' } },
     });
-
-    return marks.map(m => ({
-      ...m,
-      student: { id: m.studentId, name: 'Student', rollNumber: m.studentId }, // Profile fetch omitted for brevity if not strictly needed
-      isAbsent: m.marksObtained === 0,
-      maxMarks: m.ExamSchedule.maxMarks
-    }));
   }
 
   /**
-   * Compute internal marks for a student in a subject.
-   */
-  static async computeInternalMarks(studentId: string, subjectId: string) {
-    const subject = await prisma.subject.findUnique({
-      where: { id: subjectId }
-    });
-    if (!subject) throw new APIError('NOT_FOUND', 'Subject not found.');
-
-    const marks = await prisma.marksInternal.findMany({
-      where: { studentId, ExamSchedule: { subjectId } }
-    });
-    
-    // Average or best of two logic simplified due to ExamType removal
-    const midMarks = marks.map(m => m.marksObtained);
-    if (midMarks.length === 0) return { internalMarks: 0, formula: 'NO_DATA' };
-
-    const internalMarks = Math.max(...midMarks);
-    return { mid1Marks: midMarks[0] || 0, mid2Marks: midMarks[1] || 0, internalMarks, formula: 'BEST_OF_EXAMS' };
-  }
-
-  /**
-   * Compute SGPA and CGPA.
+   * Compute grades + SGPA for a student in a semester.
    */
   static async computeGrades(studentId: string, semester: number, academicYear: string) {
-    const sgpa = 0;
-    const cgpa = 0;
-    const totalCredits = 0;
-    const earnedCredits = 0;
-
-    await prisma.gradeRecord.create({
-      data: {
-        id: `gr-${Date.now()}`,
-        studentId,
-        sgpa: 0,
-        totalCredits: 0
-      }
+    const marks = await prisma.newMark.findMany({
+      where: { studentId, examSession: { semester, academicYear } },
+      include: { subject: true },
     });
-    return { sgpa, cgpa, totalCredits, earnedCredits };
+
+    if (marks.length === 0) return { sgpa: 0, cgpa: 0, totalCredits: 0, earnedCredits: 0, subjectGrades: [] };
+
+    let totalCreditPoints = 0;
+    let totalCredits = 0;
+    let earnedCredits = 0;
+    const subjectGrades: any[] = [];
+
+    for (const mark of marks) {
+      const maxMarks = mark.maxMarks || 30;
+      const obtained = mark.marksObtained || 0;
+      const percentage = maxMarks > 0 ? (obtained / maxMarks) * 100 : 0;
+      const { grade, points } = getGrade(percentage);
+      const credits = mark.subject.credits;
+
+      totalCredits += credits;
+      totalCreditPoints += points * credits;
+      if (grade !== 'F') earnedCredits += credits;
+
+      subjectGrades.push({
+        subjectId: mark.subjectId,
+        subjectName: mark.subject.name,
+        subjectCode: mark.subject.code,
+        marks: obtained,
+        maxMarks,
+        percentage: Math.round(percentage * 100) / 100,
+        grade,
+        gradePoints: points,
+        credits,
+      });
+    }
+
+    const sgpa = totalCredits > 0 ? Math.round((totalCreditPoints / totalCredits) * 100) / 100 : 0;
+
+    // Compute CGPA from all semesters
+    const allGrades = await prisma.newGradeRecord.findMany({ where: { studentId } });
+    const prevSgpaSum = allGrades.reduce((sum, g) => sum + g.sgpa * g.totalCredits, 0);
+    const prevCreditsSum = allGrades.reduce((sum, g) => sum + g.totalCredits, 0);
+    const cgpa = (prevCreditsSum + totalCredits) > 0
+      ? Math.round(((prevSgpaSum + sgpa * totalCredits) / (prevCreditsSum + totalCredits)) * 100) / 100
+      : sgpa;
+
+    // Upsert grade record
+    await prisma.newGradeRecord.upsert({
+      where: { studentId_semester_academicYear: { studentId, semester, academicYear } },
+      create: { studentId, semester, academicYear, sgpa, cgpa, totalCredits, earnedCredits },
+      update: { sgpa, cgpa, totalCredits, earnedCredits },
+    });
+
+    return { sgpa, cgpa, totalCredits, earnedCredits, subjectGrades };
   }
 
   /**
    * Lock an exam session.
    */
-  static async lockExamSession(examScheduleId: string, lockedById: string) {
-    return prisma.examSchedule.update({
-      where: { id: examScheduleId },
-      data: { workflowStatus: 'APPROVED' },
+  static async lockExamSession(examSessionId: string, lockedById: string) {
+    return prisma.examSession.update({
+      where: { id: examSessionId },
+      data: { isLocked: true, lockedAt: new Date(), lockedById },
     });
   }
 
   /**
    * Generate hall ticket.
    */
-  static async generateHallTicket(studentId: string, examScheduleId: string) {
-    const hallTicket = await prisma.hallTicket.upsert({
-      where: { studentId_examScheduleId: { studentId, examScheduleId } },
+  static async generateHallTicket(studentId: string, examSessionId: string) {
+    // Check attendance eligibility
+    const student = await prisma.student.findUnique({ where: { id: studentId } });
+    if (!student) throw new APIError('NOT_FOUND', 'Student not found.');
+
+    const session = await prisma.examSession.findUnique({ where: { id: examSessionId } });
+    if (!session) throw new APIError('NOT_FOUND', 'Exam session not found.');
+
+    // Get subjects for this semester
+    const subjects = await prisma.newSubject.findMany({
+      where: { departmentId: student.departmentId, semester: session.semester },
+      select: { id: true, name: true, code: true },
+    });
+
+    return prisma.newHallTicket.upsert({
+      where: { studentId_examSessionId: { studentId, examSessionId } },
       create: {
-        id: `ht-${Date.now()}`,
         studentId,
-        examScheduleId,
-        isEligible: true, // dummy field due to schema constraint removal 
-      } as any,
+        examSessionId,
+        eligibleSubjects: subjects,
+        isEligible: true,
+      },
       update: {
-        status: 'ISSUED',
+        eligibleSubjects: subjects,
+        isEligible: true,
       },
     });
-    return { hallTicket };
   }
 
   /**
-   * Get detained students.
-   */
-  static async getDetainedStudents(examScheduleId: string) {
-    return [];
-  }
-
-  /**
-   * Get grades.
+   * Get student grades.
    */
   static async getStudentGrades(studentId: string) {
-    return prisma.gradeRecord.findMany({
-      where: { studentId }
+    return prisma.newGradeRecord.findMany({
+      where: { studentId },
+      orderBy: { semester: 'asc' },
     });
   }
 
   /**
-   * Publish results.
+   * Publish results for an exam session.
    */
-  static async publishResults(examScheduleId: string, publishedById: string) {
-    const session = await prisma.examSchedule.findUnique({ where: { id: examScheduleId } });
+  static async publishResults(examSessionId: string, publishedById: string) {
+    const session = await prisma.examSession.findUnique({ where: { id: examSessionId } });
     if (!session) throw new APIError('NOT_FOUND', 'Exam session not found.');
-    return { published: 1, session };
+
+    await prisma.newGradeRecord.updateMany({
+      where: { semester: session.semester, academicYear: session.academicYear },
+      data: { isPublished: true, publishedAt: new Date() },
+    });
+
+    return { published: true, session };
+  }
+
+  /**
+   * Get detained students (below attendance threshold).
+   */
+  static async getDetainedStudents(examSessionId: string) {
+    const session = await prisma.examSession.findUnique({ where: { id: examSessionId } });
+    if (!session) return [];
+
+    const students = await prisma.student.findMany({
+      where: { semester: session.semester, isActive: true },
+      select: { id: true, name: true, rollNumber: true },
+    });
+
+    const detained: any[] = [];
+    for (const student of students) {
+      const marks = await prisma.newMark.findMany({
+        where: { studentId: student.id, examSessionId, isDetained: true },
+      });
+      if (marks.length > 0) detained.push(student);
+    }
+
+    return detained;
   }
 }

@@ -1,12 +1,12 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { AuthService } from './auth.service';
-import { authenticate, AuthRequest } from '../../core/middlewares/auth.middleware';
-import { authRateLimiter } from '../../core/middlewares/rateLimiter.middleware';
+import { authenticateToken, AuthRequest } from '../../core/middlewares/auth.middleware';
 import { AuditService } from '../audit/audit.service';
+import { authRateLimiter } from '../../core/middlewares/rateLimiter.middleware';
 
 const authRouter = Router();
 
-// POST /api/auth/login
+// POST /api/v1/auth/login
 authRouter.post('/login', authRateLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email, password } = req.body;
@@ -28,7 +28,7 @@ authRouter.post('/login', authRateLimiter, async (req: Request, res: Response, n
   }
 });
 
-// POST /api/auth/refresh
+// POST /api/v1/auth/refresh
 authRouter.post('/refresh', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { token, refreshToken } = req.body;
@@ -44,13 +44,11 @@ authRouter.post('/refresh', async (req: Request, res: Response, next: NextFuncti
   }
 });
 
-// POST /api/auth/logout
-authRouter.post('/logout', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
+// POST /api/v1/auth/logout
+authRouter.post('/logout', authenticateToken, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { refreshToken } = req.body;
-    const accessToken = req.headers.authorization?.split(' ')[1];
-
-    await AuthService.logout(refreshToken, accessToken);
+    await AuthService.logout(refreshToken);
 
     if (req.user) {
       await AuditService.log(req.user.id, 'LOGOUT', 'User', req.user.id, null, null, req);
@@ -62,7 +60,7 @@ authRouter.post('/logout', authenticate, async (req: AuthRequest, res: Response,
   }
 });
 
-// POST /api/auth/forgot-password
+// POST /api/v1/auth/forgot-password
 authRouter.post('/forgot-password', authRateLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email } = req.body;
@@ -77,7 +75,7 @@ authRouter.post('/forgot-password', authRateLimiter, async (req: Request, res: R
   }
 });
 
-// POST /api/auth/reset-password
+// POST /api/v1/auth/reset-password
 authRouter.post('/reset-password', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { token, newPassword } = req.body;
@@ -96,8 +94,8 @@ authRouter.post('/reset-password', async (req: Request, res: Response, next: Nex
   }
 });
 
-// POST /api/auth/change-password
-authRouter.post('/change-password', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
+// POST /api/v1/auth/change-password
+authRouter.post('/change-password', authenticateToken, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { currentPassword, newPassword } = req.body;
     if (!currentPassword || !newPassword) {
@@ -109,7 +107,6 @@ authRouter.post('/change-password', authenticate, async (req: AuthRequest, res: 
     }
 
     const result = await AuthService.changePassword(req.user!.id, currentPassword, newPassword);
-
     await AuditService.log(req.user!.id, 'PASSWORD_CHANGE', 'User', req.user!.id, null, null, req);
 
     res.status(200).json({ success: true, ...result });
@@ -118,8 +115,8 @@ authRouter.post('/change-password', authenticate, async (req: AuthRequest, res: 
   }
 });
 
-// GET /api/auth/me
-authRouter.get('/me', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
+// GET /api/v1/auth/me
+authRouter.get('/me', authenticateToken, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const user = await AuthService.getCurrentUser(req.user!.id);
     res.status(200).json({ success: true, user });

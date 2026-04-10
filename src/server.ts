@@ -24,6 +24,8 @@ import financeRouter from './domain/finance/finance.routes';
 import operationsRouter from './domain/operations/operations.routes';
 import notificationRouter from './domain/notifications/notification.router';
 import analyticsRouter from './domain/analytics/analytics.routes';
+import hostelRouter from './domain/hostel/hostel.router';
+import libraryRouter from './domain/library/library.router';
 
 const app = express();
 const httpServer = createServer(app);
@@ -90,6 +92,8 @@ app.use('/api/v1/fees', financeRouter);
 app.use('/api/v1/operations', operationsRouter);
 app.use('/api/v1/notifications', notificationRouter);
 app.use('/api/v1/analytics', analyticsRouter);
+app.use('/api/v1/hostel', hostelRouter);
+app.use('/api/v1/library', libraryRouter);
 
 // Mount exam cell routes if present
 try {

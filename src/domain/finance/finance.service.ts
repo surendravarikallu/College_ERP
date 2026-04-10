@@ -15,20 +15,22 @@ const INSTITUTION_NAME = process.env.INSTITUTION_NAME || 'Kits Akshar Institute 
 export class FinanceService {
 
   /**
-   * Create a fee structure.
+   * Create a fee structure (new models).
    */
   static async createFeeStructure(data: {
-    institutionId: string;
     name: string; feeType: string; amount: number;
     departmentId?: string; semester?: number;
     academicYear: string; dueDate?: string;
   }) {
-    return prisma.feeStructure.create({
+    return prisma.feeStructureNew.create({
       data: {
-        id: `fee-${Date.now()}`,
-        institutionId: data.institutionId,
         name: data.name,
+        feeType: data.feeType,
         amount: data.amount,
+        departmentId: data.departmentId,
+        semester: data.semester,
+        academicYear: data.academicYear,
+        dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
       },
     });
   }
@@ -36,47 +38,45 @@ export class FinanceService {
   /**
    * List fee structures.
    */
-  static async listFeeStructures(institutionId: string, academicYear?: string) {
-    const where: any = { institutionId };
-    return prisma.feeStructure.findMany({ where });
+  static async listFeeStructures(academicYear?: string) {
+    const where: any = { isActive: true };
+    if (academicYear) where.academicYear = academicYear;
+    return prisma.feeStructureNew.findMany({ where, orderBy: { createdAt: 'desc' } });
   }
 
   /**
    * Generate invoices for students.
-   * Auto-generates KITS-{YEAR}-{...} idempotency keys.
    */
   static async generateInvoices(feeStructureId: string, studentIds: string[]) {
-    const feeStructure = await prisma.feeStructure.findUnique({ where: { id: feeStructureId } });
+    const feeStructure = await prisma.feeStructureNew.findUnique({ where: { id: feeStructureId } });
     if (!feeStructure) throw new APIError('NOT_FOUND', 'Fee structure not found.');
 
     const invoices = [];
     for (const studentId of studentIds) {
-      // Check for existing invoice
-      const existing = await prisma.invoice.findFirst({
-        where: { studentId, status: { in: ['DUE', 'PAID'] }, InvoiceLineItem: { some: { feeStructureId } } },
+      // Skip if already has invoice for this fee structure
+      const existing = await prisma.feeInvoice.findFirst({
+        where: { studentId, feeStructureId },
       });
       if (existing) continue;
 
       // Apply scholarship if exists
-      const scholarship = await prisma.scholarship.findUnique({ where: { studentId } });
-      const discount = scholarship?.isActive ? (scholarship.percentage ? feeStructure.amount * scholarship.percentage / 100 : scholarship.amount || 0) : 0;
+      const scholarship = await prisma.scholarshipNew.findUnique({ where: { studentId } });
+      const discount = scholarship?.isActive
+        ? (scholarship.percentage ? feeStructure.amount * scholarship.percentage / 100 : scholarship.amount || 0)
+        : 0;
       const finalAmount = Math.max(0, feeStructure.amount - discount);
 
-      const invoiceId = `inv-${Date.now()}-${Math.floor(Math.random()*1000)}`;
-      const invoice = await prisma.invoice.create({
+      const invoiceNumber = `KITS-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
+
+      const invoice = await prisma.feeInvoice.create({
         data: {
-          id: invoiceId,
+          invoiceNumber,
           studentId,
-          totalAmount: finalAmount,
-          idempotencyKey: `KITS-INV-${studentId}-${feeStructureId}`,
-          dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
-          InvoiceLineItem: {
-            create: {
-              id: `ili-${Date.now()}`,
-              feeStructureId,
-              amount: finalAmount
-            }
-          }
+          feeStructureId,
+          amount: feeStructure.amount,
+          discount,
+          finalAmount,
+          dueDate: feeStructure.dueDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         },
       });
       invoices.push(invoice);
@@ -86,23 +86,20 @@ export class FinanceService {
   }
 
   /**
-   * Initiate Razorpay payment for an invoice.
+   * Initiate Razorpay payment.
    */
   static async initiatePayment(invoiceId: string, studentId: string) {
-    const invoice = await prisma.invoice.findUnique({
+    const invoice = await prisma.feeInvoice.findUnique({
       where: { id: invoiceId },
-      include: { StudentProfile: true },
+      include: { student: true },
     });
 
     if (!invoice) throw new APIError('NOT_FOUND', 'Invoice not found.');
     if (invoice.studentId !== studentId) throw new APIError('FORBIDDEN', 'This invoice does not belong to you.');
-    if (invoice.status === 'PAID') throw new APIError('CONFLICT', 'Invoice already paid.');
+    if (invoice.status === 'SUCCESS') throw new APIError('CONFLICT', 'Invoice already paid.');
 
-    const amountInPaise = Math.round(invoice.totalAmount * 100);
-    // Even if amount is 0, Razorpay needs at least 100 paise, but if it is 0, we can bypass
-    if (amountInPaise <= 0) {
-      throw new APIError('BAD_REQUEST', 'Invoice amount is zero, manual clearance required.');
-    }
+    const amountInPaise = Math.round(invoice.finalAmount * 100);
+    if (amountInPaise <= 0) throw new APIError('BAD_REQUEST', 'Invoice amount is zero.');
 
     const rzpOrder = await rzp.orders.create({
       amount: amountInPaise,
@@ -111,14 +108,11 @@ export class FinanceService {
       notes: { invoiceId: invoice.id, studentId },
     });
 
-    await prisma.payment.create({
+    await prisma.paymentTransaction.create({
       data: {
-        id: `pay-${Date.now()}-${Math.floor(Math.random()*1000)}`,
         invoiceId: invoice.id,
-        transactionRef: rzpOrder.id,
-        amountPaid: invoice.totalAmount,
-        method: 'RAZORPAY',
-        status: 'PENDING'
+        razorpayOrderId: rzpOrder.id,
+        amount: invoice.finalAmount,
       },
     });
 
@@ -127,13 +121,13 @@ export class FinanceService {
       amount: rzpOrder.amount,
       currency: 'INR',
       key: process.env.RAZORPAY_KEY || 'rzp_test_dummy',
-      studentName: invoice.StudentProfile.firstName,
+      studentName: invoice.student.name,
       institutionName: INSTITUTION_NAME,
     };
   }
 
   /**
-   * Verify and process Razorpay webhook.
+   * Verify Razorpay webhook.
    */
   static async verifyWebhook(rawBody: Buffer, signature: string) {
     const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
@@ -153,22 +147,24 @@ export class FinanceService {
       const paymentEntity = payload.payload.payment.entity;
 
       return await prisma.$transaction(async (tx) => {
-        const txn = await tx.payment.findUnique({
-          where: { transactionRef: paymentEntity.order_id },
+        const txn = await tx.paymentTransaction.findUnique({
+          where: { razorpayOrderId: paymentEntity.order_id },
         });
         if (!txn) throw new APIError('NOT_FOUND', 'Transaction not found.');
-        if (txn.status === 'CAPTURED') return { status: 'ALREADY_PROCESSED' };
+        if (txn.status === 'SUCCESS') return { status: 'ALREADY_PROCESSED' };
 
-        await tx.payment.update({
+        await tx.paymentTransaction.update({
           where: { id: txn.id },
           data: {
-            status: 'CAPTURED',
+            status: 'SUCCESS',
+            razorpayPaymentId: paymentEntity.id,
+            webhookVerified: true,
           },
         });
 
-        await tx.invoice.update({
+        await tx.feeInvoice.update({
           where: { id: txn.invoiceId },
-          data: { status: 'PAID' }, // No paidAt field in new schema
+          data: { status: 'SUCCESS', paidAt: new Date() },
         });
 
         return { status: 'PROCESSED', invoiceId: txn.invoiceId };
@@ -179,66 +175,51 @@ export class FinanceService {
   }
 
   /**
-   * Get fee dues for a student or all students.
+   * Get fee dues.
    */
   static async getFeeDues(studentId?: string) {
-    const where: any = { status: 'DUE' };
+    const where: any = { status: 'PENDING' };
     if (studentId) where.studentId = studentId;
 
-    const invoices = await prisma.invoice.findMany({
+    return prisma.feeInvoice.findMany({
       where,
       include: {
-        StudentProfile: { select: { id: true, firstName: true, enrollmentNo: true } },
-        InvoiceLineItem: { include: { FeeStructure: { select: { name: true } } } },
+        student: { select: { id: true, name: true, rollNumber: true } },
+        feeStructure: { select: { name: true, feeType: true } },
       },
+      orderBy: { dueDate: 'asc' },
     });
-
-    return invoices.map(inv => ({
-      ...inv,
-      student: { name: inv.StudentProfile.firstName, rollNumber: inv.StudentProfile.enrollmentNo },
-      feeStructure: { name: inv.InvoiceLineItem[0]?.FeeStructure.name || 'Custom Fee', feeType: 'FEE' },
-      isOverdue: inv.dueDate ? inv.dueDate < new Date() : false,
-      amount: inv.totalAmount,
-      finalAmount: inv.totalAmount
-    }));
   }
 
   /**
-   * Get invoices for a student.
+   * Get student invoices.
    */
   static async getStudentInvoices(studentId: string) {
-    const invoices = await prisma.invoice.findMany({
+    return prisma.feeInvoice.findMany({
       where: { studentId },
       include: {
-        InvoiceLineItem: { include: { FeeStructure: { select: { name: true } } } },
-        Payment: { select: { id: true, transactionRef: true, status: true, createdAt: true } },
+        feeStructure: { select: { name: true, feeType: true } },
+        transactions: { select: { id: true, razorpayOrderId: true, status: true, createdAt: true } },
       },
+      orderBy: { createdAt: 'desc' },
     });
-
-    return invoices.map(inv => ({
-      ...inv,
-      feeStructure: { name: inv.InvoiceLineItem[0]?.FeeStructure.name || 'Custom Fee', feeType: 'FEE' },
-      transactions: inv.Payment,
-      amount: inv.totalAmount,
-      finalAmount: inv.totalAmount
-    }));
   }
 
   /**
    * Generate payment receipt PDF.
    */
   static async generateReceipt(invoiceId: string): Promise<Buffer> {
-    const invoice = await prisma.invoice.findUnique({
+    const invoice = await prisma.feeInvoice.findUnique({
       where: { id: invoiceId },
       include: {
-        StudentProfile: true,
-        InvoiceLineItem: { include: { FeeStructure: true } },
-        Payment: { where: { status: 'CAPTURED' }, take: 1 },
+        student: true,
+        feeStructure: true,
+        transactions: { where: { status: 'SUCCESS' }, take: 1 },
       },
     });
 
     if (!invoice) throw new APIError('NOT_FOUND', 'Invoice not found.');
-    if (invoice.status !== 'PAID') throw new APIError('BAD_REQUEST', 'Invoice not yet paid.');
+    if (invoice.status !== 'SUCCESS') throw new APIError('BAD_REQUEST', 'Invoice not yet paid.');
 
     return new Promise((resolve, reject) => {
       const doc = new PDFDocument({ margin: 50, size: 'A4' });
@@ -247,24 +228,22 @@ export class FinanceService {
       doc.on('end', () => resolve(Buffer.concat(buffers)));
       doc.on('error', reject);
 
-      // Header
       doc.fontSize(18).text(INSTITUTION_NAME, { align: 'center' });
       doc.fontSize(12).text('Payment Receipt', { align: 'center' });
       doc.moveDown();
       doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
       doc.moveDown();
 
-      // Invoice details
       doc.fontSize(10);
-      doc.text(`Invoice No: ${invoice.idempotencyKey || invoice.id}`);
-      doc.text(`Student: ${(invoice as any).StudentProfile.firstName} (${(invoice as any).StudentProfile.enrollmentNo})`);
-      doc.text(`Fee Type: ${(invoice as any).InvoiceLineItem[0]?.FeeStructure.name || 'Custom Fee'}`);
-      doc.text(`Amount: INR ${invoice.totalAmount.toLocaleString()}`);
-      
-      const p = (invoice as any).Payment[0];
-      if (p) {
-        doc.text(`Transaction ID: ${p.transactionRef}`);
-        doc.text(`Paid On: ${p.createdAt?.toLocaleDateString()}`);
+      doc.text(`Invoice No: ${invoice.invoiceNumber}`);
+      doc.text(`Student: ${invoice.student.name} (${invoice.student.rollNumber})`);
+      doc.text(`Fee Type: ${invoice.feeStructure.name}`);
+      doc.text(`Amount: INR ${invoice.finalAmount.toLocaleString()}`);
+
+      const txn = invoice.transactions[0];
+      if (txn) {
+        doc.text(`Transaction ID: ${txn.razorpayOrderId}`);
+        doc.text(`Paid On: ${txn.createdAt.toLocaleDateString()}`);
       }
       doc.moveDown(2);
 

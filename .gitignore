@@ -23,3 +23,13 @@ coverage
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Development scratch files
+add_code.sql
+patch.sql
+test_api.js
+test_login.js
+parsed_screens.json
+
+# Compiled seed (use seed.ts source instead)
+prisma/seed.js

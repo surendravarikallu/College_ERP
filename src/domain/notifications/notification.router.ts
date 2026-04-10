@@ -1,11 +1,11 @@
 import { Router, Response, NextFunction } from 'express';
-import { authenticate, AuthRequest } from '../../core/middlewares/auth.middleware';
+import { authenticateToken, AuthRequest } from '../../core/middlewares/auth.middleware';
 import { NotificationService } from './notification.service';
 
 const notificationRouter = Router();
 
-// GET /api/notifications
-notificationRouter.get('/', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
+// GET /api/v1/notifications
+notificationRouter.get('/', authenticateToken, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { page, limit } = req.query;
     const result = await NotificationService.getNotifications(
@@ -17,24 +17,24 @@ notificationRouter.get('/', authenticate, async (req: AuthRequest, res: Response
   } catch (err) { next(err); }
 });
 
-// GET /api/notifications/unread-count
-notificationRouter.get('/unread-count', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
+// GET /api/v1/notifications/unread-count
+notificationRouter.get('/unread-count', authenticateToken, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const count = await NotificationService.getUnreadCount(req.user!.id);
     res.json({ success: true, count });
   } catch (err) { next(err); }
 });
 
-// PATCH /api/notifications/:id/read
-notificationRouter.patch('/:id/read', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
+// PATCH /api/v1/notifications/:id/read
+notificationRouter.patch('/:id/read', authenticateToken, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     await NotificationService.markAsRead(req.params.id, req.user!.id);
     res.json({ success: true });
   } catch (err) { next(err); }
 });
 
-// PATCH /api/notifications/read-all
-notificationRouter.patch('/read-all', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
+// PATCH /api/v1/notifications/read-all
+notificationRouter.patch('/read-all', authenticateToken, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     await NotificationService.markAllAsRead(req.user!.id);
     res.json({ success: true });

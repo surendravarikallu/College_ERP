@@ -2,11 +2,14 @@ import { Queue, Worker, QueueEvents } from 'bullmq';
 import { redisClient } from '../../core/cache/redis.service';
 import { EmailService } from '../notifications/email.service';
 import { MarksService } from '../exams/marks.service';
+import { createEmailWorker } from '../../core/workers/email.worker';
+import { createNotificationWorker } from '../../core/workers/notification.worker';
+import { createAttendanceAlertWorker } from '../../core/workers/attendance-alert.worker';
 
 const connection = redisClient;
 
 // ════════════════════════════════════════════════
-// QUEUES
+// QUEUES (legacy — re-exported from queue.setup)
 // ════════════════════════════════════════════════
 
 export const emailQueue = new Queue('EmailQueue', { connection });
@@ -17,23 +20,19 @@ export const examQueue = new Queue('ExamQueue', { connection });
 // ════════════════════════════════════════════════
 
 export const startWorkers = () => {
-  // 1. Email Worker (Rate limited to avoid spamming SMTP)
-  const emailWorker = new Worker('EmailQueue', async (job) => {
-    const { to, subject, html } = job.data;
-    await EmailService.send(to, subject, html);
-    return { sent: true, to };
-  }, { 
-    connection,
-    limiter: {
-      max: 5,        // Max 5 emails
-      duration: 1000 // per second
-    }
-  });
+  // 1. Email Worker
+  createEmailWorker();
+  console.log('[Workers] Email worker started.');
 
-  emailWorker.on('completed', (job) => console.log(`[EmailWorker] Job ${job.id} done.`));
-  emailWorker.on('failed', (job, err) => console.error(`[EmailWorker] Job ${job?.id} failed:`, err.message));
+  // 2. Notification Worker
+  createNotificationWorker();
+  console.log('[Workers] Notification worker started.');
 
-  // 2. Exam Processing Worker (Heavy tasks like result generation)
+  // 3. Attendance Alert Worker
+  createAttendanceAlertWorker();
+  console.log('[Workers] Attendance alert worker started.');
+
+  // 4. Exam Processing Worker (Heavy tasks like hall ticket generation)
   const examWorker = new Worker('ExamQueue', async (job) => {
     if (job.name === 'generate_hall_tickets') {
       const { sessionId, studentIds } = job.data;
@@ -42,7 +41,6 @@ export const startWorkers = () => {
         try {
           await MarksService.generateHallTicket(studentId, sessionId);
           generated++;
-          // Update progress
           await job.updateProgress(Math.floor((generated / studentIds.length) * 100));
         } catch (e) {
           console.error(`[ExamWorker] Failed hall ticket for ${studentId}:`, e);
@@ -59,5 +57,4 @@ export const startWorkers = () => {
 
   examWorker.on('completed', (job) => console.log(`[ExamWorker] Job ${job.name}:${job.id} done.`));
   examWorker.on('failed', (job, err) => console.error(`[ExamWorker] Job ${job?.name}:${job?.id} failed:`, err.message));
-
 };
