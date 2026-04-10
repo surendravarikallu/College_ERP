@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Lock, Mail, Building } from 'lucide-react';
+import { Lock, Mail, GraduationCap, ArrowRight } from 'lucide-react';
 import { apiClient } from '../../api/client';
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ institutionId: '', email: '', password: '' });
+  const [form, setForm] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -15,62 +15,113 @@ const LoginPage = () => {
     setError('');
 
     try {
-      const response = await apiClient.post('/identity/auth/login', form);
-      const payload = response.data.data;
-      
-      // Native storage mirroring Phase 7 client.ts requirements 
+      const response = await apiClient.post('/auth/login', {
+        email: form.email,
+        password: form.password,
+      });
+
+      const payload = response.data;
+
+      // Store tokens
       localStorage.setItem('erp_access_token', payload.accessToken);
       localStorage.setItem('erp_refresh_token', payload.refreshToken);
-      
-      // Explicit Routing based on Generic Backend payloads securely
-      navigate(`/${payload.user.role.toLowerCase()}`); 
+
+      // Route based on role
+      const role = payload.user.role.toLowerCase().replace('_', '');
+      if (role === 'superadmin' || role === 'admin') {
+        navigate('/admin');
+      } else if (role === 'faculty' || role === 'hod' || role === 'principal') {
+        navigate('/faculty');
+      } else if (role === 'examcell') {
+        navigate('/admin/examcell');
+      } else {
+        navigate('/student');
+      }
     } catch (err: any) {
-      const rawMsg = err.message || 'Unknown Network Throw';
-      setError(err.response?.data?.error || `Authentication Network Failed: ${rawMsg}`);
-      console.error("[Login Debug Error]:", err);
+      setError(err.response?.data?.error || 'Authentication failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100 dark:bg-surface-dark relative overflow-hidden p-4">
-      <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&q=80')] bg-cover bg-center opacity-10 dark:opacity-5 mix-blend-luminosity" />
-      
-      <div className="glass w-full max-w-md p-8 rounded-3xl z-10 animate-slide-up shadow-2xl relative">
-        <div className="mb-8 text-center">
-          <h2 className="text-3xl font-extrabold tracking-tight mb-2 text-slate-900 dark:text-white">Sign In</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400">Identity Secure Architecture V1.0</p>
+    <div className="min-h-screen flex items-center justify-center bg-slate-950 relative overflow-hidden p-4">
+      {/* Animated background gradient */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-indigo-600/20 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-violet-600/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl" />
+      </div>
+
+      <div className="w-full max-w-md z-10">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-600/10 border border-indigo-500/20 rounded-2xl mb-4">
+            <GraduationCap className="w-8 h-8 text-indigo-400" />
+          </div>
+          <h1 className="text-2xl font-bold text-white mb-1">Kits Akshar ERP</h1>
+          <p className="text-sm text-slate-400">Sign in to your institutional account</p>
         </div>
 
-        {error && <div className="mb-4 p-3 bg-red-100 border border-red-300 text-red-700 text-sm rounded-lg animate-pulse">{error}</div>}
+        {/* Card */}
+        <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-2xl p-8 shadow-2xl shadow-black/40">
+          {error && (
+            <div className="mb-5 p-3.5 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm rounded-xl font-medium">
+              {error}
+            </div>
+          )}
 
-        <form onSubmit={handleLogin} className="flex flex-col gap-4">
-          <div className="relative">
-             <Building className="absolute left-3 top-3.5 h-5 w-5 text-slate-400" />
-             <input type="text" placeholder="Institution UUID" required
-                value={form.institutionId} onChange={e => setForm({...form, institutionId: e.target.value})}
-                className="w-full pl-10 pr-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all dark:text-white" />
-          </div>
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Email / Username</label>
+              <div className="relative">
+                <Mail className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-500" />
+                <input
+                  type="text"
+                  placeholder="admin@kitsakshar.edu.in"
+                  required
+                  value={form.email}
+                  onChange={e => setForm({ ...form, email: e.target.value })}
+                  className="w-full pl-11 pr-4 py-3 bg-slate-950 border border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm text-white placeholder-slate-600"
+                />
+              </div>
+            </div>
 
-          <div className="relative">
-             <Mail className="absolute left-3 top-3.5 h-5 w-5 text-slate-400" />
-             <input type="text" placeholder="Username (or Email)" required
-                value={form.email} onChange={e => setForm({...form, email: e.target.value})}
-                className="w-full pl-10 pr-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all dark:text-white" />
-          </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Password</label>
+              <div className="relative">
+                <Lock className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-500" />
+                <input
+                  type="password"
+                  placeholder="••••••••"
+                  required
+                  value={form.password}
+                  onChange={e => setForm({ ...form, password: e.target.value })}
+                  className="w-full pl-11 pr-4 py-3 bg-slate-950 border border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm text-white placeholder-slate-600"
+                />
+              </div>
+            </div>
 
-          <div className="relative">
-             <Lock className="absolute left-3 top-3.5 h-5 w-5 text-slate-400" />
-             <input type="password" placeholder="Password" required
-                value={form.password} onChange={e => setForm({...form, password: e.target.value})}
-                className="w-full pl-10 pr-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all dark:text-white" />
-          </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 text-white py-3.5 rounded-xl font-semibold transition-all shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40"
+            >
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Authenticating...
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">Sign In <ArrowRight className="w-4 h-4" /></span>
+              )}
+            </button>
+          </form>
 
-          <button type="submit" disabled={loading} className="mt-4 w-full bg-brand-600 hover:bg-brand-500 text-white py-3 rounded-xl font-semibold shadow-lg transition-all disabled:opacity-50 flex items-center justify-center">
-            {loading ? <span className="animate-pulse">Authenticating...</span> : "Secure Login"}
-          </button>
-        </form>
+          <p className="text-center text-xs text-slate-600 mt-6">
+            Kits Akshar Institute of Technology &bull; Secure Access
+          </p>
+        </div>
       </div>
     </div>
   );

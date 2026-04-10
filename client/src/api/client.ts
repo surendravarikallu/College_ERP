@@ -33,7 +33,7 @@ apiClient.interceptors.response.use(
         if (!refreshToken) throw new Error('Refresh voided');
 
         // Bypasses Interceptor strictly preventing infinite 401 loop crashes
-        const { data } = await axios.post('/api/v1/identity/auth/refresh', { token: refreshToken });
+        const { data } = await axios.post('/api/v1/auth/refresh', { token: refreshToken });
         
         localStorage.setItem('erp_access_token', data.accessToken);
         originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;

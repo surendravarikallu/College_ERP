@@ -23,8 +23,8 @@ export const paginationGuard = (req: Request, res: Response, next: NextFunction)
 // -------------------------------------------------------------
 // src/core/middlewares/tracing.middleware.ts
 // -------------------------------------------------------------
-import { randomUUID } from 'crypto';
-import { AsyncLocalStorage } from 'async_hooks';
+import { randomUUID } from 'node:crypto';
+import { AsyncLocalStorage } from 'node:async_hooks';
 
 // Extends deeply across Node allowing DB Loggers to extract correlationIds cleanly 
 export const requestContext = new AsyncLocalStorage<Map<string, string>>();

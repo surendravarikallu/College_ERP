@@ -1,65 +1,162 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import helmet from 'helmet';
 import compression from 'compression';
+import helmet from 'helmet';
 import { createServer } from 'http';
 import path from 'path';
-import dotenv from 'dotenv';
-dotenv.config();
-
-// Middlewares
-import { tracingMiddleware } from './core/middlewares/tracing.middleware';
-import { globalRateLimiter } from './core/middlewares/rateLimiter.middleware';
-import { paginationGuard } from './core/middlewares/pagination.middleware';
-import { globalErrorFilter } from './core/common/exceptions/api.error';
-import { auditMiddleware } from './core/middlewares/audit.middleware';
-import { initScheduler } from './core/scheduler';
 
 // Core
-import { configureWebSockets } from './core/websockets/gateway';
-import mainRouter from './domain/routes';
+import { prisma } from './core/database/prisma.client';
+import { redisClient } from './core/cache/redis.service';
+import { globalErrorFilter } from './core/common/exceptions/api.error';
+import { paginationGuard } from './core/middlewares/pagination.middleware';
+import { tracingMiddleware } from './core/middlewares/tracing.middleware';
+import { setupSocketGateway } from './core/websockets/gateway';
+import { globalRateLimiter, authRateLimiter } from './core/middlewares/rateLimiter.middleware';
+
+// Domain routes
+import authRouter from './domain/auth/auth.router';
+import auditRouter from './domain/audit/audit.router';
+import attendanceRouter from './domain/attendance/attendance.routes';
+import examsRouter from './domain/exams/exams.routes';
+import financeRouter from './domain/finance/finance.routes';
+import operationsRouter from './domain/operations/operations.routes';
+import notificationRouter from './domain/notifications/notification.router';
+import analyticsRouter from './domain/analytics/analytics.routes';
 
 const app = express();
 const httpServer = createServer(app);
+const PORT = parseInt(process.env.PORT || '8091', 10);
+const NODE_ENV = process.env.NODE_ENV || 'development';
 
-// 1. Hardened Global Security Layers
-app.use(helmet({ contentSecurityPolicy: false }));
-app.use(cors({ 
-  origin: (origin, callback) => callback(null, true), // Dynamic Origin for LAN/Multiple IPs
-  credentials: true 
+// ════════════════════════════════════════════════
+// GLOBAL MIDDLEWARE
+// ════════════════════════════════════════════════
+app.use(helmet({
+  contentSecurityPolicy: NODE_ENV === 'production' ? undefined : false,
+  crossOriginEmbedderPolicy: false,
 }));
 app.use(compression());
+app.use(cors({
+  origin: NODE_ENV === 'production'
+    ? process.env.FRONTEND_URL || 'http://localhost:8090'
+    : true,
+  credentials: true,
+}));
 
-app.use(express.json({ limit: '5mb' }));
+// JSON body parsing (skip for webhook route which needs raw body)
+app.use((req, res, next) => {
+  if (req.path === '/api/v1/fees/payment/webhook') return next();
+  express.json({ limit: '10mb' })(req, res, next);
+});
 app.use(express.urlencoded({ extended: true }));
 
-// 2. Core Operational Hooks
-app.use((req, res, next) => { next(); });
-app.use('/api', globalRateLimiter);
-app.use('/api', paginationGuard);
-app.use('/api', auditMiddleware);
+// Custom middleware
+app.use(tracingMiddleware);
+app.use(paginationGuard);
+app.use(globalRateLimiter);
 
-// 3. API Sub-Router Binding
-app.use('/api/v1', mainRouter);
+// ════════════════════════════════════════════════
+// HEALTH CHECK
+// ════════════════════════════════════════════════
+app.get('/health', async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    const redisOk = redisClient.status === 'ready';
+    res.json({
+      status: 'healthy',
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+      services: {
+        database: 'connected',
+        redis: redisOk ? 'connected' : 'disconnected',
+      },
+    });
+  } catch (err: any) {
+    res.status(503).json({ status: 'unhealthy', error: err.message });
+  }
+});
 
-// 4. Global Error Filter (must be AFTER routes)
+// ════════════════════════════════════════════════
+// API ROUTES
+// ════════════════════════════════════════════════
+app.use('/api/v1/auth', authRouter);
+app.use('/api/v1/identity/auth', authRouter); // Legacy compat
+app.use('/api/v1/audit', auditRouter);
+app.use('/api/v1/attendance', attendanceRouter);
+app.use('/api/v1/exams', examsRouter);
+app.use('/api/v1/fees', financeRouter);
+app.use('/api/v1/operations', operationsRouter);
+app.use('/api/v1/notifications', notificationRouter);
+app.use('/api/v1/analytics', analyticsRouter);
+
+// Mount exam cell routes if present
+try {
+  const examcellRoutes = require('./domain/examcell/examcell.routes').default;
+  if (examcellRoutes) app.use('/api/ec', examcellRoutes);
+} catch { /* Exam cell module optional */ }
+
+try {
+  const autonomousRoutes = require('./domain/examcell/autonomous.routes').default;
+  if (autonomousRoutes) app.use('/api/ec', autonomousRoutes);
+} catch { /* Autonomous routes optional */ }
+
+// ════════════════════════════════════════════════
+// STATIC CLIENT (SPA)
+// ════════════════════════════════════════════════
+const clientDist = path.join(__dirname, '..', 'client', 'dist');
+app.use(express.static(clientDist));
+app.get('*', (req, res, next) => {
+  // Skip API routes
+  if (req.path.startsWith('/api/') || req.path === '/health') return next();
+  res.sendFile(path.join(clientDist, 'index.html'), (err) => {
+    if (err) res.status(404).json({ error: 'Frontend not built. Run: npm run build --prefix client' });
+  });
+});
+
+// ════════════════════════════════════════════════
+// ERROR HANDLER
+// ════════════════════════════════════════════════
 app.use(globalErrorFilter);
 
-// 5. Single-Port Front-End Proxy
-const clientBuildPath = path.join(__dirname, '../client/dist');
-app.use(express.static(clientBuildPath));
+// ════════════════════════════════════════════════
+// SOCKET.IO
+// ════════════════════════════════════════════════
+setupSocketGateway(httpServer);
 
-app.get('*', (req, res) => {
-  res.sendFile(path.join(clientBuildPath, 'index.html'));
-});
+import { startWorkers } from './domain/queues/workers';
 
-// 6. Websocket Attachment
-const io = configureWebSockets(httpServer);
-import { SocketEmitter } from './core/websockets/emitter.service';
-SocketEmitter.setIo(io);
-
-const PORT = Number(process.env.PORT) || 8080;
+// ════════════════════════════════════════════════
+// STARTUP
+// ════════════════════════════════════════════════
 httpServer.listen(PORT, '0.0.0.0', () => {
-    console.log(`[ERP Core] Target multiplexer bound on 0.0.0.0:${PORT} (LAN Ready)`);
-    initScheduler();
+  console.log(`
+  ╔════════════════════════════════════════════════════╗
+  ║  🎓 Kits Akshar College ERP — ${NODE_ENV.toUpperCase()}             ║
+  ║  Port: ${PORT}                                       ║
+  ║  Health: http://localhost:${PORT}/health               ║
+  ╚════════════════════════════════════════════════════╝
+  `);
+  
+  // Start background queue workers
+  if (NODE_ENV !== 'test') {
+    startWorkers();
+    console.log('[Workers] BullMQ workers started.');
+  }
 });
+
+// Graceful shutdown
+const shutdown = async () => {
+  console.log('\n[Shutdown] Closing connections...');
+  await prisma.$disconnect();
+  redisClient.quit();
+  httpServer.close(() => {
+    console.log('[Shutdown] Server closed.');
+    process.exit(0);
+  });
+};
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);
+
+export { app, httpServer };

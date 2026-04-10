@@ -14,6 +14,7 @@ import HostelManagement from './pages/admin/HostelManagement';
 import LibraryManagement from './pages/admin/LibraryManagement';
 import TransportManagement from './pages/admin/TransportManagement';
 import InventoryManagement from './pages/admin/InventoryManagement';
+import FinanceManagement from './pages/admin/FinanceManagement';
 
 // Student pages
 import StudentAttendance from './pages/student/StudentAttendance';
@@ -22,6 +23,8 @@ import FeePayment from './pages/student/FeePayment';
 import StudentTimetable from './pages/student/StudentTimetable';
 
 // Faculty pages
+import FacultyAttendance from './pages/faculty/FacultyAttendance';
+import FacultyMarksEntry from './pages/faculty/FacultyMarksEntry';
 
 // Exam Cell pages
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -50,7 +53,7 @@ const App = () => {
 
           {/* Admin Shell */}
           <Route path="/admin" element={
-            <ProtectedRoute allowedRoles={['SUPERADMIN', 'ADMIN']}>
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
               <AppShell role="ADMIN" />
             </ProtectedRoute>
           }>
@@ -59,7 +62,7 @@ const App = () => {
             <Route path="academics" element={<AcademicSetup />} />
             <Route path="attendance" element={<PlaceholderPage title="Attendance Reports" icon="📋" desc="Department-wise attendance reports and analytics" />} />
             <Route path="exams" element={<PlaceholderPage title="Exam Management" icon="📝" desc="Schedule exams, manage scripts, publish results" />} />
-            <Route path="finance" element={<PlaceholderPage title="Finance Management" icon="💰" desc="Fee structures, invoices, payment tracking" />} />
+            <Route path="finance" element={<FinanceManagement />} />
             <Route path="hostel" element={<HostelManagement />} />
             <Route path="library" element={<LibraryManagement />} />
             <Route path="transport" element={<TransportManagement />} />
@@ -130,8 +133,8 @@ const App = () => {
             </ProtectedRoute>
           }>
             <Route index element={<FacultyDashboardIndex />} />
-            <Route path="attendance" element={<PlaceholderPage title="Mark Attendance" icon="📋" desc="Start attendance sessions for your classes" />} />
-            <Route path="marks" element={<PlaceholderPage title="Marks Entry" icon="📝" desc="Enter and manage internal marks" />} />
+            <Route path="attendance" element={<FacultyAttendance />} />
+            <Route path="marks" element={<FacultyMarksEntry />} />
             <Route path="timetable" element={<StudentTimetable />} />
           </Route>
 

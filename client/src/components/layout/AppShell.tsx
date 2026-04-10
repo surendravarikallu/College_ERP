@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
@@ -8,6 +8,8 @@ import {
   GraduationCap, Receipt, CalendarDays, PenTool, ScrollText, Upload,
   UserCog, FileBarChart, Stamp, ListChecks, Bot
 } from 'lucide-react';
+import { toast } from 'sonner';
+import { io } from 'socket.io-client';
 
 interface AppShellProps {
   role: string;
@@ -69,7 +71,7 @@ const AppShell: React.FC<AppShellProps> = ({ role }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
 
-  const normalizedRole = role === 'SUPERADMIN' ? 'ADMIN' : (['HOD', 'PRINCIPAL'].includes(role) ? 'FACULTY' : role);
+  const normalizedRole = role === 'SUPER_ADMIN' ? 'ADMIN' : (['HOD', 'PRINCIPAL'].includes(role) ? 'FACULTY' : role);
   const items = menuConfig[normalizedRole] || menuConfig.STUDENT;
 
   const userInfo = useMemo(() => {
@@ -82,6 +84,29 @@ const AppShell: React.FC<AppShellProps> = ({ role }) => {
   }, [role]);
 
   const title = pageTitles[location.pathname] || 'Dashboard';
+
+  useEffect(() => {
+    const token = localStorage.getItem('erp_access_token');
+    if (!token) return;
+
+    // Connect to WebSocket dynamically
+    const socket = io('/', {
+      auth: { token },
+      transports: ['websocket', 'polling'], // Fallback to polling if websocket fails
+    });
+
+    socket.on('connect', () => console.log('Socket.io connected:', socket.id));
+    
+    // Listen for new notifications
+    socket.on('notification:new', (data) => {
+      toast(data.title, {
+        description: data.message,
+        icon: <Bot className="w-5 h-5 text-indigo-500" />,
+      });
+    });
+
+    return () => { socket.disconnect(); };
+  }, []);
 
   return (
     <div className="flex min-h-screen bg-background text-foreground transition-colors duration-300">

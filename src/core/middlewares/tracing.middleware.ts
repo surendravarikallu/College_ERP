@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { randomUUID } from 'crypto';
-import { AsyncLocalStorage } from 'async_hooks';
+import { randomUUID } from 'node:crypto';
+import { AsyncLocalStorage } from 'node:async_hooks';
 
 export const requestContext = new AsyncLocalStorage<Map<string, string>>();
 

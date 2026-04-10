@@ -3,59 +3,59 @@ import { createAdapter } from '@socket.io/redis-adapter';
 import { redisClient } from '../cache/redis.service';
 import jwt from 'jsonwebtoken';
 
-export const configureWebSockets = (httpServer: any) => {
-  const io = new Server(httpServer, {
+let io: Server;
+
+export const setupSocketGateway = (httpServer: any) => {
+  io = new Server(httpServer, {
     cors: { origin: '*', methods: ['GET', 'POST'] },
-    transports: ['websocket', 'polling'] // Polyfill mappings
+    transports: ['websocket', 'polling'],
   });
 
-  // 1. Phase 7 Hardening: Native PM2 Cluster broadcasting
+  // Redis adapter for horizontal scaling (PM2 cluster mode)
   try {
     const pubClient = redisClient.duplicate();
     const subClient = redisClient.duplicate();
-    
-    // Attach mandatory error handlers to prevent process crash
     pubClient.on('error', (err) => console.error('[Socket Redis Pub Error]', err.message));
     subClient.on('error', (err) => console.error('[Socket Redis Sub Error]', err.message));
-
     io.adapter(createAdapter(pubClient, subClient));
   } catch (err) {
     console.warn('[Socket Adapter] Redis not available, falling back to local adapter.');
   }
 
-  // 2. JWT Hook Valdations terminating bad connections natively
+  // JWT Authentication for WebSocket connections
   io.use((socket, next) => {
     const token = socket.handshake.auth.token || socket.handshake.headers['bearer'];
-    if (!token) return next(new Error('Authentication entirely missing.'));
+    if (!token) return next(new Error('Authentication required.'));
 
     try {
-      const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'fallback-dev-secret-1234');
-      socket.data.user = decoded; // Mounts the payload (institutionId, role, id)
+      const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'fallback-dev-key');
+      socket.data.user = decoded;
       next();
     } catch (err) {
-      next(new Error('Authentication expired or strictly invalid.'));
+      next(new Error('Invalid or expired token.'));
     }
   });
 
   io.on('connection', (socket) => {
     const user = socket.data.user;
-    
-    // 3. Perfect Tenant Segmentation mapping securely bridging broadcast scopes 
-    socket.join(`tenant:${user.institutionId}`);
-    
-    // Channel subscription handlers...
+
+    // Join user-specific room for targeted notifications
+    socket.join(`user:${user.id}`);
+
+    // Role-based rooms
+    socket.join(`role:${user.role}`);
+
+    // Attendance live session room
     socket.on('join_attendance_room', (roomId: string) => {
-       // Validate attendance maps cleanly
-       socket.join(`attendance_${roomId}`);
+      socket.join(`attendance:${roomId}`);
     });
 
-    console.log(`[Socket] User ${user.userId} connected to Tenant ${user.institutionId}`);
+    console.log(`[Socket] User ${user.id} connected (role: ${user.role})`);
 
-    // 4. Token Revalidation Map: Checks every 15min and forces disconnect if JWT expired on backend globally
+    // Token expiry revalidation every 15 minutes
     const tick = setInterval(() => {
-        // Pseudo check logic asserting token exp mapping
-        const currentTs = Math.floor(Date.now() / 1000);
-        if (currentTs > user.exp) socket.disconnect(true);
+      const currentTs = Math.floor(Date.now() / 1000);
+      if (currentTs > user.exp) socket.disconnect(true);
     }, 15 * 60 * 1000);
 
     socket.on('disconnect', () => clearInterval(tick));
@@ -63,3 +63,8 @@ export const configureWebSockets = (httpServer: any) => {
 
   return io;
 };
+
+/**
+ * Get the Socket.IO server instance for emitting events from services.
+ */
+export const getSocketIO = () => io;

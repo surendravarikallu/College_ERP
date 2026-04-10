@@ -1,42 +1,763 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
+model AnswerScript {
+  id                 String               @id
+  examScheduleId     String
+  studentId          String
+  maskedId           String               @unique
+  status             ScriptStatus         @default(PENDING)
+  finalMarks         Float?
+  ExamSchedule       ExamSchedule         @relation(fields: [examScheduleId], references: [id])
+  StudentProfile     StudentProfile       @relation(fields: [studentId], references: [id])
+  EvaluationRecord   EvaluationRecord[]
+  ModerationRecord   ModerationRecord[]
+  RevaluationRequest RevaluationRequest[]
+  ScriptAllocation   ScriptAllocation[]
+
+  @@unique([examScheduleId, studentId])
 }
 
-// ==========================================
-// 1. IDENTITY & INFRASTRUCTURE
-// ==========================================
+model AttendanceRecord {
+  id                String            @id
+  sessionId         String
+  studentId         String
+  isPresent         Boolean
+  AttendanceSession AttendanceSession @relation(fields: [sessionId], references: [id])
+  StudentProfile    StudentProfile    @relation(fields: [studentId], references: [id])
+
+  @@unique([sessionId, studentId])
+}
+
+model AttendanceSession {
+  id               String             @id
+  timeSlotId       String
+  sessionDate      DateTime
+  status           AttStatus          @default(ACTIVE)
+  AttendanceRecord AttendanceRecord[]
+  TimeSlot         TimeSlot           @relation(fields: [timeSlotId], references: [id])
+
+  @@unique([timeSlotId, sessionDate])
+}
+
+model AuditLog {
+  id            String   @id
+  institutionId String
+  userId        String?
+  action        String
+  resourceTable String
+  resourceId    String
+  oldValues     Json?
+  newValues     Json?
+  correlationId String?
+  createdAt     DateTime @default(now())
+  User          User?    @relation(fields: [userId], references: [id])
+
+  @@index([institutionId, resourceTable, resourceId])
+}
+
+model Batch {
+  id             String           @id
+  courseId       String
+  year           Int
+  Course         Course           @relation(fields: [courseId], references: [id])
+  StudentProfile StudentProfile[]
+  TimeSlot       TimeSlot[]
+}
+
+model BedAllocation {
+  id             String         @id
+  roomId         String
+  studentId      String
+  allocatedFrom  DateTime
+  allocatedTo    DateTime?
+  status         String         @default("ACTIVE")
+  HostelRoom     HostelRoom     @relation(fields: [roomId], references: [id])
+  StudentProfile StudentProfile @relation(fields: [studentId], references: [id])
+}
+
+model Course {
+  id           String     @id
+  departmentId String
+  name         String
+  Batch        Batch[]
+  Department   Department @relation(fields: [departmentId], references: [id])
+  Subject      Subject[]
+}
+
+model Department {
+  id             String           @id
+  institutionId  String
+  name           String
+  code           String           @unique @default("CSE")
+  Course         Course[]
+  Institution    Institution      @relation(fields: [institutionId], references: [id])
+  FacultyProfile FacultyProfile[]
+}
+
+model DriverAllocation {
+  id        String  @id
+  vehicleId String
+  routeId   String
+  Route     Route   @relation(fields: [routeId], references: [id])
+  Vehicle   Vehicle @relation(fields: [vehicleId], references: [id])
+}
+
+model EvaluationRecord {
+  id             String         @id
+  scriptId       String
+  evaluatorId    String
+  marksAwarded   Float
+  feedback       String?
+  evaluatedAt    DateTime       @default(now())
+  FacultyProfile FacultyProfile @relation(fields: [evaluatorId], references: [id])
+  AnswerScript   AnswerScript   @relation(fields: [scriptId], references: [id])
+
+  @@unique([scriptId, evaluatorId])
+}
+
+model ExamSchedule {
+  id                String              @id
+  subjectId         String
+  examDate          DateTime
+  maxMarks          Float
+  workflowStatus    WorkflowStatus      @default(DRAFT)
+  AnswerScript      AnswerScript[]
+  Subject           Subject             @relation(fields: [subjectId], references: [id])
+  MarksInternal     MarksInternal[]
+  ResultPublication ResultPublication[]
+  GradeRecord       GradeRecord[]
+  HallTicket        HallTicket[]
+}
+
+model FacultyProfile {
+  id                 String               @id
+  userId             String               @unique
+  institutionId      String
+  firstName          String
+  lastName           String
+  departmentId       String?
+  EvaluationRecord   EvaluationRecord[]
+  Department         Department?          @relation(fields: [departmentId], references: [id])
+  User               User                 @relation(fields: [userId], references: [id])
+  ModerationRecord   ModerationRecord[]
+  ScriptAllocation   ScriptAllocation[]
+  TeachingAllocation TeachingAllocation[]
+}
+
+model FeeStructure {
+  id              String            @id
+  institutionId   String
+  name            String
+  amount          Float
+  Institution     Institution       @relation(fields: [institutionId], references: [id])
+  InvoiceLineItem InvoiceLineItem[]
+}
+
+model GradingScale {
+  id       String @id
+  minMarks Float
+  maxMarks Float
+  grade    String
+}
+
+model HostelHistoryLog {
+  id             String         @id
+  studentId      String
+  roomId         String
+  action         String
+  date           DateTime
+  StudentProfile StudentProfile @relation(fields: [studentId], references: [id])
+}
+
+model HostelRoom {
+  id            String          @id
+  roomNo        String
+  capacity      Int
+  BedAllocation BedAllocation[]
+}
 
 model Institution {
-  id        String   @id @default(uuid())
-  name      String
-  createdAt DateTime @default(now())
-  
-  users          User[]
-  departments    Department[]
-  feeStructures  FeeStructure[]
-  settings       Settings[]
+  id           String         @id
+  name         String
+  createdAt    DateTime       @default(now())
+  Department   Department[]
+  FeeStructure FeeStructure[]
+  Settings     Settings[]
+  User         User[]
+}
+
+model InventoryAllocation {
+  id             String         @id
+  assetId        String
+  allocatedTo    String
+  dateIssued     DateTime
+  dateReturned   DateTime?
+  InventoryAsset InventoryAsset @relation(fields: [assetId], references: [id])
+}
+
+model InventoryAsset {
+  id                  String                @id
+  name                String
+  status              String                @default("AVAILABLE")
+  InventoryAllocation InventoryAllocation[]
+}
+
+model Invoice {
+  id              String            @id
+  studentId       String
+  totalAmount     Float
+  status          InvoiceStatus     @default(DUE)
+  idempotencyKey  String            @unique
+  dueDate         DateTime
+  StudentProfile  StudentProfile    @relation(fields: [studentId], references: [id])
+  InvoiceLineItem InvoiceLineItem[]
+  Payment         Payment[]
+}
+
+model InvoiceLineItem {
+  id             String       @id
+  invoiceId      String
+  feeStructureId String
+  amount         Float
+  FeeStructure   FeeStructure @relation(fields: [feeStructureId], references: [id])
+  Invoice        Invoice      @relation(fields: [invoiceId], references: [id])
+}
+
+model JobArchive {
+  id         String    @id
+  jobName    String
+  payload    Json
+  status     JobStatus @default(PENDING)
+  errorLog   String?
+  retryCount Int       @default(0)
+  createdAt  DateTime  @default(now())
+
+  @@index([status, jobName])
+}
+
+model LibraryCopy {
+  id                 String               @id
+  bookId             String
+  status             String               @default("AVAILABLE")
+  LibraryTransaction LibraryTransaction[]
+}
+
+model LibraryTransaction {
+  id          String      @id
+  copyId      String
+  userId      String
+  issueDate   DateTime
+  dueDate     DateTime
+  returnDate  DateTime?
+  fineAmount  Float       @default(0)
+  LibraryCopy LibraryCopy @relation(fields: [copyId], references: [id])
+}
+
+model MarksInternal {
+  id              String       @id
+  examScheduleId  String
+  studentId       String
+  marksObtained   Float
+  gradeCalculated String?
+  isLocked        Boolean      @default(false)
+  version         Int          @default(1)
+  ExamSchedule    ExamSchedule @relation(fields: [examScheduleId], references: [id])
+
+  @@unique([examScheduleId, studentId])
+}
+
+model ModerationRecord {
+  id             String         @id
+  scriptId       String
+  moderatorId    String
+  originalMarks  Float
+  moderatedMarks Float
+  reason         String
+  moderatedAt    DateTime       @default(now())
+  FacultyProfile FacultyProfile @relation(fields: [moderatorId], references: [id])
+  AnswerScript   AnswerScript   @relation(fields: [scriptId], references: [id])
+}
+
+model Payment {
+  id             String        @id
+  invoiceId      String
+  amountPaid     Float
+  method         String
+  transactionRef String        @unique
+  status         PaymentStatus @default(PENDING)
+  createdAt      DateTime      @default(now())
+  Invoice        Invoice       @relation(fields: [invoiceId], references: [id])
+  Refund         Refund[]
+}
+
+model Refund {
+  id        String       @id
+  paymentId String
+  amount    Float
+  reason    String
+  status    RefundStatus @default(INITIATED)
+  Payment   Payment      @relation(fields: [paymentId], references: [id])
+}
+
+model ReportsDailyAttendanceAgg {
+  id            String   @id
+  institutionId String
+  departmentId  String?
+  date          DateTime
+  present       Int
+  absent        Int
+
+  @@unique([institutionId, departmentId, date])
+}
+
+model ReportsMonthlyFinanceAgg {
+  id             String @id
+  institutionId  String
+  year           Int
+  month          Int
+  totalCollected Float
+  due            Float
+
+  @@unique([institutionId, year, month])
+}
+
+model ResultPublication {
+  id             String            @id
+  examScheduleId String
+  publishedBy    String
+  status         PublicationStatus @default(DRAFT)
+  publishedAt    DateTime?
+  version        Int               @default(1)
+  ExamSchedule   ExamSchedule      @relation(fields: [examScheduleId], references: [id])
+}
+
+model RevaluationRequest {
+  id            String            @id
+  scriptId      String
+  invoiceId     String?
+  status        RevaluationStatus @default(PENDING_PAYMENT)
+  originalMarks Float
+  newMarks      Float?
+  requestedAt   DateTime          @default(now())
+  resolvedAt    DateTime?
+  AnswerScript  AnswerScript      @relation(fields: [scriptId], references: [id])
+}
+
+model Route {
+  id               String             @id
+  name             String
+  DriverAllocation DriverAllocation[]
+  RouteStop        RouteStop[]
+}
+
+model RouteStop {
+  id                   String                 @id
+  routeId              String
+  name                 String
+  Route                Route                  @relation(fields: [routeId], references: [id])
+  StudentTransportPass StudentTransportPass[]
+}
+
+model ScriptAllocation {
+  id             String         @id
+  scriptId       String
+  evaluatorId    String
+  isPrimary      Boolean        @default(true)
+  status         String         @default("ASSIGNED")
+  createdAt      DateTime       @default(now())
+  FacultyProfile FacultyProfile @relation(fields: [evaluatorId], references: [id])
+  AnswerScript   AnswerScript   @relation(fields: [scriptId], references: [id])
+}
+
+model Settings {
+  id            String      @id
+  institutionId String
+  key           String
+  value         String
+  Institution   Institution @relation(fields: [institutionId], references: [id])
+
+  @@unique([institutionId, key])
+}
+
+model StudentProfile {
+  id                   String                 @id
+  userId               String                 @unique
+  institutionId        String
+  firstName            String
+  lastName             String
+  enrollmentNo         String                 @unique
+  batchId              String?
+  AnswerScript         AnswerScript[]
+  AttendanceRecord     AttendanceRecord[]
+  BedAllocation        BedAllocation[]
+  HostelHistoryLog     HostelHistoryLog[]
+  Invoice              Invoice[]
+  Batch                Batch?                 @relation(fields: [batchId], references: [id])
+  User                 User                   @relation(fields: [userId], references: [id])
+  StudentTransportPass StudentTransportPass[]
+  Scholarship          Scholarship?
+  GradeRecord          GradeRecord[]
+  HallTicket           HallTicket[]
+
+  @@index([institutionId, batchId])
+}
+
+model StudentTransportPass {
+  id             String         @id
+  studentId      String
+  routeStopId    String
+  RouteStop      RouteStop      @relation(fields: [routeStopId], references: [id])
+  StudentProfile StudentProfile @relation(fields: [studentId], references: [id])
+}
+
+model Subject {
+  id                 String               @id
+  courseId           String
+  name               String
+  code               String               @unique
+  ExamSchedule       ExamSchedule[]
+  Course             Course               @relation(fields: [courseId], references: [id])
+  TeachingAllocation TeachingAllocation[]
+}
+
+model TeachingAllocation {
+  id             String         @id
+  subjectId      String
+  facultyId      String
+  FacultyProfile FacultyProfile @relation(fields: [facultyId], references: [id])
+  Subject        Subject        @relation(fields: [subjectId], references: [id])
+  TimeSlot       TimeSlot[]
+
+  @@unique([subjectId, facultyId])
+}
+
+model TimeSlot {
+  id                   String              @id
+  batchId              String
+  teachingAllocationId String
+  dayOfWeek            Int
+  startTime            String
+  endTime              String
+  AttendanceSession    AttendanceSession[]
+  Batch                Batch               @relation(fields: [batchId], references: [id])
+  TeachingAllocation   TeachingAllocation  @relation(fields: [teachingAllocationId], references: [id])
+
+  @@index([dayOfWeek, startTime, endTime])
 }
 
 model User {
-  id             String      @id @default(uuid())
+  id             String          @id
   institutionId  String
-  institution    Institution @relation(fields: [institutionId], references: [id])
-  email          String      @unique
+  email          String          @unique
   passwordHash   String
-  role           Role        @default(STUDENT) // Simplified Role model (Real RBAC handled via Permissions arrays in code)
-  isActive       Boolean     @default(true)
-  createdAt      DateTime    @default(now())
-
-  studentProfile StudentProfile?
-  facultyProfile FacultyProfile?
-  auditLogs      AuditLog[]
+  role           Role            @default(STUDENT)
+  isActive       Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  AuditLog       AuditLog[]
+  FacultyProfile FacultyProfile?
+  StudentProfile StudentProfile?
+  Institution    Institution     @relation(fields: [institutionId], references: [id])
+  Notification   Notification[]
 
   @@index([institutionId, role])
+}
+
+model Vehicle {
+  id               String             @id
+  registrationNo   String
+  capacity         Int
+  DriverAllocation DriverAllocation[]
+}
+
+model audit_logs {
+  id           Int       @id @default(autoincrement())
+  action_type  String
+  entity_type  String
+  entity_id    Int
+  performed_by Int
+  reason       String?
+  created_at   DateTime  @default(now()) @db.Timestamp(6)
+  ec_admins    ec_admins @relation(fields: [performed_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "audit_logs_performed_by_admins_id_fk")
+}
+
+model ec_admins {
+  id                        Int            @id(map: "admins_pkey") @default(autoincrement())
+  username                  String         @unique(map: "admins_username_unique")
+  password                  String
+  is_admin                  Boolean        @default(false)
+  can_upload                Boolean        @default(false)
+  can_manage_settings       Boolean        @default(false)
+  can_manage_academics      Boolean        @default(false)
+  can_manage_internal_marks Boolean        @default(false)
+  can_view_dashboard        Boolean        @default(false)
+  can_view_students         Boolean        @default(false)
+  can_view_reports          Boolean        @default(false)
+  can_freeze_marks          Boolean        @default(false)
+  login_type                String         @default("GLOBAL")
+  allowed_ips               String         @default("")
+  audit_logs                audit_logs[]
+  ec_mid_marks              ec_mid_marks[]
+}
+
+model ec_audit_logs {
+  id           Int      @id @default(autoincrement())
+  action_type  String
+  entity_type  String
+  entity_id    Int
+  performed_by Int
+  reason       String?
+  created_at   DateTime @default(now()) @db.Timestamp(6)
+}
+
+model ec_faculty {
+  id                     Int                      @id @default(autoincrement())
+  faculty_name           String
+  department             String?
+  designation            String?
+  ec_faculty_subject_map ec_faculty_subject_map[]
+}
+
+model ec_faculty_subject_map {
+  id            Int        @id @default(autoincrement())
+  faculty_id    Int
+  subject_code  String
+  semester      String
+  branch        String
+  batch         String
+  academic_year String
+  section       String?
+  ec_faculty    ec_faculty @relation(fields: [faculty_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model ec_global_settings {
+  id                Int      @id(map: "global_settings_pkey") @default(autoincrement())
+  auto_lock_on_save Boolean  @default(true)
+  updated_at        DateTime @default(now()) @db.Timestamp(6)
+}
+
+model ec_mid_exams {
+  id              Int       @id @default(autoincrement())
+  academic_year   String
+  semester        String
+  branch          String
+  batch           String    @default("")
+  subject_code    String
+  mid_type        String
+  max_marks       Int       @default(30)
+  is_frozen       Boolean   @default(false)
+  is_final_locked Boolean   @default(false)
+  locked_at       DateTime? @db.Timestamp(6)
+  created_at      DateTime  @default(now()) @db.Timestamp(6)
+}
+
+model ec_mid_marks {
+  id                   Int         @id(map: "mid_marks_pkey") @default(autoincrement())
+  student_id           Int
+  mid_exam_id          Int
+  mid_exam_marks       Float       @default(0)
+  assignment_marks     Float       @default(0)
+  quiz_marks           Float       @default(0)
+  total_marks          Float       @default(0)
+  entered_by           Int
+  updated_at           DateTime    @default(now()) @db.Timestamp(6)
+  created_at           DateTime    @default(now()) @db.Timestamp(6)
+  lab_daily_marks      Float       @default(0)
+  lab_record_marks     Float       @default(0)
+  lab_internal_marks   Float       @default(0)
+  lab_viva_marks       Float       @default(0)
+  prc_assessment_marks Float       @default(0)
+  report_marks         Float       @default(0)
+  seminar_marks        Float       @default(0)
+  is_locked            Boolean     @default(false)
+  locked_at            DateTime?   @db.Timestamp(6)
+  ec_admins            ec_admins   @relation(fields: [entered_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "mid_marks_entered_by_admins_id_fk")
+  mid_exams            mid_exams   @relation(fields: [mid_exam_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "mid_marks_mid_exam_id_mid_exams_id_fk")
+  ec_students          ec_students @relation(fields: [student_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "mid_marks_student_id_students_id_fk")
+
+  @@unique([student_id, mid_exam_id], map: "unique_mid_mark_idx")
+}
+
+model ec_results {
+  id             Int         @id(map: "results_pkey") @default(autoincrement())
+  student_id     Int
+  subject_id     Int
+  semester       String
+  academic_year  String
+  exam_type      String
+  attempt_no     Int
+  grade          String
+  grade_points   Int
+  credits_earned Float
+  status         String
+  is_latest      Boolean     @default(true)
+  created_at     DateTime?   @default(now()) @db.Timestamp(6)
+  internal_marks Int?
+  ec_students    ec_students @relation(fields: [student_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "results_student_id_students_id_fk")
+
+  @@unique([student_id, subject_id, exam_type, academic_year], map: "unique_result_idx")
+}
+
+model ec_student_academic_status {
+  id            Int      @id @default(autoincrement())
+  student_id    Int
+  academic_year String
+  semester      String
+  status        String
+  reason        String?  @default("")
+  updated_at    DateTime @default(now()) @db.Timestamp(6)
+}
+
+model ec_student_photos {
+  id         Int    @id @default(autoincrement())
+  student_id Int    @unique
+  photo_data String
+}
+
+model ec_students {
+  id                      Int                       @id(map: "students_pkey") @default(autoincrement())
+  roll_number             String                    @unique(map: "students_roll_number_unique")
+  name                    String
+  branch                  String
+  batch                   String
+  regulation              String
+  program                 String?
+  section                 String?
+  gender                  String?
+  phone                   String?
+  address                 String?
+  father_name             String?
+  ec_mid_marks            ec_mid_marks[]
+  ec_results              ec_results[]
+  student_academic_status student_academic_status[]
+  student_photos          student_photos?
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model ec_subjects {
+  id           Int    @default(autoincrement())
+  subject_code String
+  subject_name String
+  credits      Float
+  semester     String
+  branch       String
+
+  @@ignore
+}
+
+model faculty {
+  id                  Int                   @id @default(autoincrement())
+  faculty_name        String
+  department          String?
+  designation         String?
+  faculty_subject_map faculty_subject_map[]
+}
+
+model faculty_subject_map {
+  id            Int     @id @default(autoincrement())
+  faculty_id    Int
+  subject_code  String
+  semester      String
+  branch        String
+  academic_year String
+  section       String?
+  batch         String
+  faculty       faculty @relation(fields: [faculty_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "faculty_subject_map_faculty_id_faculty_id_fk")
+}
+
+model mid_exams {
+  id              Int            @id @default(autoincrement())
+  academic_year   String
+  semester        String
+  branch          String
+  subject_code    String
+  mid_type        String
+  max_marks       Int            @default(30)
+  created_at      DateTime       @default(now()) @db.Timestamp(6)
+  batch           String         @default("")
+  is_frozen       Boolean        @default(false)
+  is_final_locked Boolean        @default(false)
+  locked_at       DateTime?      @db.Timestamp(6)
+  ec_mid_marks    ec_mid_marks[]
+}
+
+model student_academic_status {
+  id            Int         @id @default(autoincrement())
+  student_id    Int
+  academic_year String
+  semester      String
+  status        String
+  reason        String?     @default("")
+  updated_at    DateTime    @default(now()) @db.Timestamp(6)
+  ec_students   ec_students @relation(fields: [student_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "student_academic_status_student_id_students_id_fk")
+}
+
+model student_photos {
+  id          Int         @id @default(autoincrement())
+  student_id  Int         @unique(map: "student_photos_student_id_unique")
+  photo_data  String
+  ec_students ec_students @relation(fields: [student_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "student_photos_student_id_students_id_fk")
+}
+
+model subjects {
+  id           Int    @id @default(autoincrement())
+  subject_code String @unique(map: "subjects_subject_code_unique")
+  subject_name String
+  credits      Float
+  semester     String
+  branch       String
+}
+
+enum AttStatus {
+  ACTIVE
+  LOCKED
+}
+
+enum InvoiceStatus {
+  DUE
+  PARTIAL
+  PAID
+  CANCELLED
+}
+
+enum JobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum PaymentStatus {
+  PENDING
+  CAPTURED
+  FAILED
+}
+
+enum PublicationStatus {
+  DRAFT
+  VERIFIED
+  APPROVED
+  RELEASED
+}
+
+enum RefundStatus {
+  INITIATED
+  PROCESSED
+  FAILED
+}
+
+enum RevaluationStatus {
+  PENDING_PAYMENT
+  PAYMENT_VERIFIED
+  IN_PROCESS
+  NO_CHANGE
+  MARKS_ALTERED
 }
 
 enum Role {
@@ -49,214 +770,12 @@ enum Role {
   STAFF
 }
 
-model StudentProfile {
-  id             String  @id @default(uuid())
-  userId         String  @unique
-  user           User    @relation(fields: [userId], references: [id])
-  institutionId  String
-  
-  firstName      String
-  lastName       String
-  enrollmentNo   String  @unique
-  batchId        String?
-  batch          Batch?  @relation(fields: [batchId], references: [id])
-
-  attendanceRecords  AttendanceRecord[]
-  invoices           Invoice[]
-  bedAllocations     BedAllocation[]
-  hostelHistories    HostelHistoryLog[]
-  transportPasses    StudentTransportPass[]
-  answerScripts      AnswerScript[]
-
-  @@index([institutionId, batchId])
-}
-
-model FacultyProfile {
-  id             String  @id @default(uuid())
-  userId         String  @unique
-  user           User    @relation(fields: [userId], references: [id])
-  institutionId  String
-  
-  firstName      String
-  lastName       String
-  departmentId   String?
-  department     Department? @relation(fields: [departmentId], references: [id])
-
-  teachingAllocations    TeachingAllocation[]
-  scriptAllocations      ScriptAllocation[]
-  evaluationRecords      EvaluationRecord[]
-  moderationRecords      ModerationRecord[]
-}
-
-model Settings {
-  id            String  @id @default(uuid())
-  institutionId String
-  institution   Institution @relation(fields: [institutionId], references: [id])
-  key           String  // e.g. 'LIB_LATE_FINE_PER_DAY'
-  value         String
-  
-  @@unique([institutionId, key])
-}
-
-model AuditLog {
-  id            String   @id @default(uuid())
-  institutionId String
-  userId        String?
-  user          User?    @relation(fields: [userId], references: [id])
-  action        String
-  resourceTable String
-  resourceId    String
-  oldValues     Json?
-  newValues     Json?
-  correlationId String?
-  createdAt     DateTime @default(now())
-
-  @@index([institutionId, resourceTable, resourceId])
-}
-
-model JobArchive {
-  id          String   @id @default(uuid())
-  jobName     String
-  payload     Json
-  status      JobStatus @default(PENDING)
-  errorLog    String?
-  retryCount  Int      @default(0)
-  createdAt   DateTime @default(now())
-
-  @@index([status, jobName])
-}
-
-enum JobStatus {
+enum ScriptStatus {
   PENDING
-  PROCESSING
-  COMPLETED
-  FAILED
-}
-
-
-// ==========================================
-// 2. ACADEMICS
-// ==========================================
-
-model Department {
-  id             String   @id @default(uuid())
-  institutionId  String
-  institution    Institution @relation(fields: [institutionId], references: [id])
-  name           String
-
-  faculties      FacultyProfile[]
-  courses        Course[]
-}
-
-model Course {
-  id             String   @id @default(uuid())
-  departmentId   String
-  department     Department @relation(fields: [departmentId], references: [id])
-  name           String
-  
-  batches        Batch[]
-  subjects       Subject[]
-}
-
-model Batch {
-  id             String   @id @default(uuid())
-  courseId       String
-  course         Course   @relation(fields: [courseId], references: [id])
-  year           Int
-
-  students       StudentProfile[]
-  timeSlots      TimeSlot[]
-}
-
-model Subject {
-  id             String   @id @default(uuid())
-  courseId       String
-  course         Course   @relation(fields: [courseId], references: [id])
-  name           String
-  code           String   @unique
-
-  teachingAllocations TeachingAllocation[]
-  examSchedules       ExamSchedule[]
-}
-
-model TeachingAllocation {
-  id             String   @id @default(uuid())
-  subjectId      String
-  subject        Subject  @relation(fields: [subjectId], references: [id])
-  facultyId      String
-  faculty        FacultyProfile @relation(fields: [facultyId], references: [id])
-
-  timeSlots      TimeSlot[]
-
-  @@unique([subjectId, facultyId])
-}
-
-model TimeSlot {
-  id                  String   @id @default(uuid())
-  batchId             String
-  batch               Batch    @relation(fields: [batchId], references: [id])
-  teachingAllocationId String
-  teachingAllocation  TeachingAllocation @relation(fields: [teachingAllocationId], references: [id])
-  
-  dayOfWeek           Int      // 0-6
-  startTime           String   // '09:00'
-  endTime             String   // '10:00'
-
-  attendanceSessions  AttendanceSession[]
-
-  @@index([dayOfWeek, startTime, endTime])
-  @@index([batchId, dayOfWeek])
-}
-
-
-// ==========================================
-// 3. ATTENDANCE
-// ==========================================
-
-model AttendanceSession {
-  id             String   @id @default(uuid())
-  timeSlotId     String
-  timeSlot       TimeSlot @relation(fields: [timeSlotId], references: [id])
-  sessionDate    DateTime // The actual date of class
-  status         AttStatus @default(ACTIVE)
-
-  records        AttendanceRecord[]
-
-  @@unique([timeSlotId, sessionDate]) // Prevent dual marking
-}
-
-enum AttStatus {
-  ACTIVE
-  LOCKED
-}
-
-model AttendanceRecord {
-  id             String   @id @default(uuid())
-  sessionId      String
-  session        AttendanceSession @relation(fields: [sessionId], references: [id])
-  studentId      String
-  student        StudentProfile    @relation(fields: [studentId], references: [id])
-  isPresent      Boolean
-
-  @@unique([sessionId, studentId]) // Idempotency
-}
-
-
-// ==========================================
-// 4. EXAMS
-// ==========================================
-
-model ExamSchedule {
-  id             String   @id @default(uuid())
-  subjectId      String
-  subject        Subject  @relation(fields: [subjectId], references: [id])
-  examDate       DateTime
-  maxMarks       Float
-  workflowStatus WorkflowStatus @default(DRAFT)
-  
-  marksInternal       MarksInternal[]
-  answerScripts       AnswerScript[]
-  resultPublications  ResultPublication[]
+  ALLOCATED
+  EVALUATED
+  REVIEWED
+  FINALIZED
 }
 
 enum WorkflowStatus {
@@ -266,346 +785,45 @@ enum WorkflowStatus {
   PUBLISHED
 }
 
-model MarksInternal {
-  id             String   @id @default(uuid())
+model Scholarship {
+  id             String         @id @default(uuid())
+  studentId      String         @unique
+  isActive       Boolean        @default(true)
+  percentage     Float?
+  amount         Float?
+  StudentProfile StudentProfile @relation(fields: [studentId], references: [id])
+}
+
+model GradeRecord {
+  id             String         @id @default(uuid())
+  studentId      String
+  examScheduleId String?
+  sgpa           Float
+  totalCredits   Int
+  StudentProfile StudentProfile @relation(fields: [studentId], references: [id])
+  ExamSchedule   ExamSchedule?  @relation(fields: [examScheduleId], references: [id])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  type      String   @default("INFO")
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  User      User     @relation(fields: [userId], references: [id])
+}
+
+model HallTicket {
+  id             String         @id @default(uuid())
+  studentId      String
   examScheduleId String
-  examSchedule   ExamSchedule @relation(fields: [examScheduleId], references: [id])
-  studentId      String
-  marksObtained  Float
-  gradeCalculated String?
-  isLocked       Boolean  @default(false)
-  version        Int      @default(1)
+  url            String?
+  issuedAt       DateTime       @default(now())
+  status         String         @default("ISSUED")
+  StudentProfile StudentProfile @relation(fields: [studentId], references: [id])
+  ExamSchedule   ExamSchedule   @relation(fields: [examScheduleId], references: [id])
 
-  @@unique([examScheduleId, studentId])
-}
-
-model GradingScale {
-  id             String   @id @default(uuid())
-  minMarks       Float
-  maxMarks       Float
-  grade          String
-}
-
-
-// ==========================================
-// 5. FINANCE
-// ==========================================
-
-model FeeStructure {
-  id             String      @id @default(uuid())
-  institutionId  String
-  institution    Institution @relation(fields: [institutionId], references: [id])
-  name           String
-  amount         Float
-
-  invoiceItems   InvoiceLineItem[]
-}
-
-model Invoice {
-  id             String   @id @default(uuid())
-  studentId      String
-  student        StudentProfile @relation(fields: [studentId], references: [id])
-  totalAmount    Float
-  status         InvoiceStatus @default(DUE)
-  idempotencyKey String   @unique // Prevent double generations
-  dueDate        DateTime
-
-  lineItems      InvoiceLineItem[]
-  payments       Payment[]
-
-  @@index([studentId, status])
-  @@index([dueDate, status])
-}
-
-enum InvoiceStatus {
-  DUE
-  PARTIAL
-  PAID
-  CANCELLED
-}
-
-model InvoiceLineItem {
-  id             String   @id @default(uuid())
-  invoiceId      String
-  invoice        Invoice  @relation(fields: [invoiceId], references: [id])
-  feeStructureId String
-  feeStructure   FeeStructure @relation(fields: [feeStructureId], references: [id])
-  amount         Float
-}
-
-model Payment {
-  id             String   @id @default(uuid())
-  invoiceId      String
-  invoice        Invoice  @relation(fields: [invoiceId], references: [id])
-  amountPaid     Float
-  method         String   // RAZORPAY / CASH
-  transactionRef String   @unique // Gateway references natively
-  status         PaymentStatus @default(PENDING)
-  createdAt      DateTime @default(now())
-
-  refunds        Refund[]
-
-  @@index([invoiceId, status])
-}
-
-enum PaymentStatus {
-  PENDING
-  CAPTURED
-  FAILED
-}
-
-model Refund {
-  id             String   @id @default(uuid())
-  paymentId      String
-  payment        Payment  @relation(fields: [paymentId], references: [id])
-  amount         Float
-  reason         String
-  status         RefundStatus @default(INITIATED)
-}
-
-enum RefundStatus {
-  INITIATED
-  PROCESSED
-  FAILED
-}
-
-
-// ==========================================
-// 6. OPERATIONS
-// ==========================================
-
-model HostelRoom {
-  id             String   @id @default(uuid())
-  roomNo         String
-  capacity       Int
-  
-  bedAllocations BedAllocation[]
-}
-
-model BedAllocation {
-  id             String   @id @default(uuid())
-  roomId         String
-  room           HostelRoom @relation(fields: [roomId], references: [id])
-  studentId      String
-  student        StudentProfile @relation(fields: [studentId], references: [id])
-  allocatedFrom  DateTime
-  allocatedTo    DateTime?
-  status         String   @default("ACTIVE")
-}
-
-model HostelHistoryLog {
-  id             String   @id @default(uuid())
-  studentId      String
-  student        StudentProfile @relation(fields: [studentId], references: [id])
-  roomId         String
-  action         String   // CHECK_IN / CHECK_OUT
-  date           DateTime
-}
-
-model Vehicle {
-  id             String   @id @default(uuid())
-  registrationNo String
-  capacity       Int
-
-  driverAllocations DriverAllocation[]
-}
-
-model Route {
-  id             String   @id @default(uuid())
-  name           String
-
-  routeStops     RouteStop[]
-  driverAllocations DriverAllocation[]
-}
-
-model DriverAllocation {
-  id             String   @id @default(uuid())
-  vehicleId      String
-  vehicle        Vehicle  @relation(fields: [vehicleId], references: [id])
-  routeId        String
-  route          Route    @relation(fields: [routeId], references: [id])
-}
-
-model RouteStop {
-  id             String   @id @default(uuid())
-  routeId        String
-  route          Route    @relation(fields: [routeId], references: [id])
-  name           String
-
-  passes         StudentTransportPass[]
-}
-
-model StudentTransportPass {
-  id             String   @id @default(uuid())
-  studentId      String
-  student        StudentProfile @relation(fields: [studentId], references: [id])
-  routeStopId    String
-  routeStop      RouteStop @relation(fields: [routeStopId], references: [id])
-}
-
-model LibraryCopy {
-  id             String   @id @default(uuid())
-  bookId         String   // Maps to generic Book Metadata title/isbn
-  status         String   @default("AVAILABLE") // AVAILABLE, ISSUED, LOST
-
-  transactions   LibraryTransaction[]
-}
-
-model LibraryTransaction {
-  id             String   @id @default(uuid())
-  copyId         String
-  copy           LibraryCopy @relation(fields: [copyId], references: [id])
-  userId         String   // Student or Faculty UUID
-  issueDate      DateTime
-  dueDate        DateTime
-  returnDate     DateTime?
-  fineAmount     Float    @default(0)
-}
-
-model InventoryAsset {
-  id             String   @id @default(uuid())
-  name           String
-  status         String   @default("AVAILABLE") // AVAILABLE, DEPLOYED, MAINTENANCE, DAMAGED
-
-  allocations    InventoryAllocation[]
-}
-
-model InventoryAllocation {
-  id             String   @id @default(uuid())
-  assetId        String
-  asset          InventoryAsset @relation(fields: [assetId], references: [id])
-  allocatedTo    String   // UserId
-  dateIssued     DateTime
-  dateReturned   DateTime?
-}
-
-
-// ==========================================
-// 7. ANALYTICS (Pre-Aggregated Mirrors)
-// ==========================================
-
-model ReportsDailyAttendanceAgg {
-  id             String   @id @default(uuid())
-  institutionId  String
-  departmentId   String?  // Null means Global bounds
-  date           DateTime
-  present        Int
-  absent         Int
-  
-  @@unique([institutionId, departmentId, date])
-}
-
-model ReportsMonthlyFinanceAgg {
-  id             String   @id @default(uuid())
-  institutionId  String
-  year           Int
-  month          Int
-  totalCollected Float
-  due            Float
-
-  @@unique([institutionId, year, month])
-}
-
-
-// ==========================================
-// 8. AUTONOMOUS EXAM CELL
-// ==========================================
-
-model AnswerScript {
-  id             String   @id @default(uuid())
-  examScheduleId String
-  examSchedule   ExamSchedule @relation(fields: [examScheduleId], references: [id])
-  studentId      String
-  student        StudentProfile @relation(fields: [studentId], references: [id])
-  maskedId       String   @unique // For anonymous evaluation
-  status         ScriptStatus @default(PENDING)
-  finalMarks     Float?
-
-  allocations    ScriptAllocation[]
-  evaluations    EvaluationRecord[]
-  moderations    ModerationRecord[]
-  revaluations   RevaluationRequest[]
-
-  @@unique([examScheduleId, studentId])
-}
-
-enum ScriptStatus {
-  PENDING
-  ALLOCATED
-  EVALUATED
-  REVIEWED
-  FINALIZED
-}
-
-model ScriptAllocation {
-  id             String   @id @default(uuid())
-  scriptId       String
-  script         AnswerScript @relation(fields: [scriptId], references: [id])
-  evaluatorId    String
-  evaluator      FacultyProfile @relation(fields: [evaluatorId], references: [id])
-  isPrimary      Boolean  @default(true) // distinguishes Double Evaluation assigned faculty
-  status         String   @default("ASSIGNED") // ASSIGNED, COMPLETED, REASSIGNED
-  createdAt      DateTime @default(now())
-}
-
-model EvaluationRecord {
-  id             String   @id @default(uuid())
-  scriptId       String
-  script         AnswerScript @relation(fields: [scriptId], references: [id])
-  evaluatorId    String
-  evaluator      FacultyProfile @relation(fields: [evaluatorId], references: [id])
-  marksAwarded   Float
-  feedback       String?
-  evaluatedAt    DateTime @default(now())
-
-  @@unique([scriptId, evaluatorId]) // Single evaluation per faculty per script
-}
-
-model ModerationRecord {
-  id             String   @id @default(uuid())
-  scriptId       String
-  script         AnswerScript @relation(fields: [scriptId], references: [id])
-  moderatorId    String
-  moderator      FacultyProfile @relation(fields: [moderatorId], references: [id])
-  originalMarks  Float
-  moderatedMarks Float
-  reason         String
-  moderatedAt    DateTime @default(now())
-}
-
-model ResultPublication {
-  id             String   @id @default(uuid())
-  examScheduleId String
-  examSchedule   ExamSchedule @relation(fields: [examScheduleId], references: [id])
-  publishedBy    String   // UserId of the admin/HOD triggering publication
-  status         PublicationStatus @default(DRAFT)
-  publishedAt    DateTime?
-  version        Int      @default(1)
-}
-
-enum PublicationStatus {
-  DRAFT
-  VERIFIED
-  APPROVED
-  RELEASED
-}
-
-model RevaluationRequest {
-  id             String   @id @default(uuid())
-  scriptId       String
-  script         AnswerScript @relation(fields: [scriptId], references: [id])
-  invoiceId      String?  // Integration with Finance
-  status         RevaluationStatus @default(PENDING_PAYMENT)
-  originalMarks  Float
-  newMarks       Float?
-  requestedAt    DateTime @default(now())
-  resolvedAt     DateTime?
-}
-
-enum RevaluationStatus {
-  PENDING_PAYMENT
-  PAYMENT_VERIFIED
-  IN_PROCESS
-  NO_CHANGE
-  MARKS_ALTERED
+  @@unique([studentId, examScheduleId])
 }

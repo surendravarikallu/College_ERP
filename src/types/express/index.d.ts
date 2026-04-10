@@ -5,7 +5,6 @@ declare global {
     export interface Request {
       user?: {
         id: string;
-        institutionId: string;
         role: string;
         profileId?: string;
       };

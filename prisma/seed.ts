@@ -1,57 +1,109 @@
 import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('Seeding Database...');
+  console.log('🌱 Seeding Database...\n');
 
-  // 1. Create a Default Institution explicitly mapping the requested ID
-  const institution = await prisma.institution.upsert({
-    where: { id: 'KITSG' },
-    update: {},
-    create: {
-      id: 'KITSG',
-      name: 'Academic Architect University',
+  // ── 0. Create Default Institution ──
+  const inst = await prisma.institution.create({
+    data: {
+      name: 'Kits Akshar Institute of Technology',
     },
   });
+  console.log(`✅ Institution: ${inst.name} created`);
 
-  console.log(`✅ Institution Created/Verified: ${institution.name} (ID: ${institution.id})`);
+  // ── 1. Create Default Department ──
+  const dept = await prisma.department.upsert({
+    where: { code: 'CSE' },
+    update: { institutionId: inst.id },
+    create: { name: 'Computer Science & Engineering', code: 'CSE', institutionId: inst.id },
+  });
+  console.log(`✅ Department: ${dept.name} (${dept.code})`);
 
-  // 2. Generate a secure Salted Hash for the Admin password
+  // ── 2. Create Super Admin User ──
   const plainPassword = 'admin123';
-  const saltRounds = 10;
-  const passwordHash = await bcrypt.hash(plainPassword, saltRounds);
+  const passwordHash = await bcrypt.hash(plainPassword, 12);
 
-  // 3. Create the SUPERADMIN User natively attaching them to the custom ID
-  const adminEmail = 'admin'; // Acting as unique username
   const admin = await prisma.user.upsert({
-    where: { email: adminEmail },
-    update: {
-      institutionId: institution.id,
-      passwordHash: passwordHash
-    },
+    where: { email: 'admin' },
+    update: { passwordHash, institutionId: inst.id },
     create: {
-      institutionId: institution.id,
-      email: adminEmail,
-      passwordHash: passwordHash,
-      role: 'ADMIN',
+      email: 'admin',
+      passwordHash,
+      role: 'SUPERADMIN',
       isActive: true,
+      institutionId: inst.id,
+    },
+  });
+  console.log(`✅ Super Admin user created (id: ${admin.id})`);
+
+  // ── 3. Create a sample Faculty ──
+  const facultyUser = await prisma.user.upsert({
+    where: { email: 'faculty@kitsakshar.edu.in' },
+    update: { passwordHash, institutionId: inst.id },
+    create: {
+      email: 'faculty@kitsakshar.edu.in',
+      passwordHash,
+      role: 'FACULTY',
+      isActive: true,
+      institutionId: inst.id,
     },
   });
 
-  console.log('✅ Admin User created successfully with Salted Bcrypt Hash!');
-  console.log('======================================================');
-  console.log(`🔐 LOGIN CREDENTIALS`);
-  console.log(`Institution ID : ${institution.id}`);
-  console.log(`Email          : ${adminEmail}`);
-  console.log(`Password       : ${plainPassword}`);
-  console.log('======================================================');
+  await prisma.facultyProfile.upsert({
+    where: { userId: facultyUser.id },
+    update: { institutionId: inst.id },
+    create: {
+      userId: facultyUser.id,
+      institutionId: inst.id,
+      firstName: 'Sample',
+      lastName: 'Faculty',
+      departmentId: dept.id,
+    },
+  });
+  console.log(`✅ Sample Faculty created`);
+
+  // ── 4. Create a sample Student ──
+  const studentUser = await prisma.user.upsert({
+    where: { email: 'student@kitsakshar.edu.in' },
+    update: { passwordHash, institutionId: inst.id },
+    create: {
+      email: 'student@kitsakshar.edu.in',
+      passwordHash,
+      role: 'STUDENT',
+      isActive: true,
+      institutionId: inst.id,
+    },
+  });
+
+  await prisma.studentProfile.upsert({
+    where: { userId: studentUser.id },
+    update: { institutionId: inst.id },
+    create: {
+      userId: studentUser.id,
+      institutionId: inst.id,
+      enrollmentNo: '22CS001',
+      firstName: 'Sample',
+      lastName: 'Student',
+    },
+  });
+  console.log(`✅ Sample Student created`);
+
+  // ── Summary ──
+  console.log('\n══════════════════════════════════════════');
+  console.log('🔐 LOGIN CREDENTIALS');
+  console.log('──────────────────────────────────────────');
+  console.log(`Admin    → email: admin          / password: ${plainPassword}`);
+  console.log(`Faculty  → email: faculty@kitsakshar.edu.in / password: ${plainPassword}`);
+  console.log(`Student  → email: student@kitsakshar.edu.in / password: ${plainPassword}`);
+  console.log('══════════════════════════════════════════\n');
 }
 
 main()
   .catch((e) => {
-    console.error(e);
+    console.error('❌ Seed failed:', e);
     process.exit(1);
   })
   .finally(async () => {

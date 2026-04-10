@@ -1,386 +1,568 @@
 <div align="center">
-  <h1>🎓 Kits Akshar Institute of Technology - Comprehensive ERP System</h1>
-  <p>A highly scalable, modern, and robust Enterprise Resource Planning solution tailored for the operational excellence of Kits Akshar Institute of Technology.</p>
+  <h1>🎓 Kits Akshar Institute of Technology — College ERP</h1>
+  <p>A production-grade Enterprise Resource Planning system for complete institutional management.</p>
   
   [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)]()
-  [![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)]()
+  [![React](https://img.shields.io/badge/React_18-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)]()
   [![Node.js](https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white)]()
   [![Prisma](https://img.shields.io/badge/Prisma-3982CE?style=for-the-badge&logo=Prisma&logoColor=white)]()
-  [![Redis](https://img.shields.io/badge/redis-%23DD0031.svg?style=for-the-badge&logo=redis&logoColor=white)]()
-  [![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)]()
+  [![Redis](https://img.shields.io/badge/Redis-%23DD0031.svg?style=for-the-badge&logo=redis&logoColor=white)]()
+  [![Socket.io](https://img.shields.io/badge/Socket.io-010101?style=for-the-badge&logo=socket.io&logoColor=white)]()
+  [![Docker](https://img.shields.io/badge/Docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)]()
 </div>
 
 <br />
-
-Welcome to the official repository for the **College Complete ERP System**. This repository houses both the frontend client and backend server codebases for managing students, faculty, examinations, attendance, curricula, and institutional internal metrics. 
 
 ---
 
 ## 📑 Table of Contents
 
 1. [Executive Summary](#1-executive-summary)
-2. [Core Features & Modules](#2-core-features--modules)
+2. [Core Modules](#2-core-modules)
 3. [Technology Stack](#3-technology-stack)
 4. [System Architecture](#4-system-architecture)
-5. [Project Directory Structure](#5-project-directory-structure)
-6. [Prerequisites & Environment](#6-prerequisites--environment)
-7. [Installation & Local Setup](#7-installation--local-setup)
-8. [Configuration (Environment Variables)](#8-configuration-environment-variables)
-9. [Database Management & Prisma Setup](#9-database-management--prisma-setup)
-10. [Caching Strategy (Redis)](#10-caching-strategy-redis)
-11. [API Reference & Integrations](#11-api-reference--integrations)
-12. [Frontend Architecture & Theming](#12-frontend-architecture--theming)
-13. [Specific Implementation Details](#13-specific-implementation-details)
-14. [Deployment Guide](#14-deployment-guide)
-15. [Security Best Practices](#15-security-best-practices)
-16. [Testing & Quality Assurance](#16-testing--quality-assurance)
-17. [Contributing & Version Control](#17-contributing--version-control)
-18. [Troubleshooting & FAQ](#18-troubleshooting--faq)
-19. [License & Acknowledgments](#19-license--acknowledgments)
+5. [Project Structure](#5-project-structure)
+6. [Prerequisites](#6-prerequisites)
+7. [Installation & Setup](#7-installation--setup)
+8. [Environment Variables](#8-environment-variables)
+9. [Database Setup](#9-database-setup)
+10. [API Reference](#10-api-reference)
+11. [Frontend Architecture](#11-frontend-architecture)
+12. [Real-Time Features](#12-real-time-features)
+13. [Payment Integration](#13-payment-integration)
+14. [Security Architecture](#14-security-architecture)
+15. [Caching Strategy](#15-caching-strategy)
+16. [Background Jobs](#16-background-jobs)
+17. [Deployment](#17-deployment)
+18. [Troubleshooting](#18-troubleshooting)
+19. [License](#19-license)
 
 ---
 
 ## 1. Executive Summary
 
-This Unified ERP platform modernizes administrative, academic, and student experiences. By eliminating data silos, it centralizes core college operations including real-time attendance tracking, grade automation, faculty assessment management, lateral-entry student integration, and complete exam cell administration. It features a strict Role-Based Access Control (RBAC) model ensuring that sensitive data is exclusively visible to authorized stakeholders. 
+This unified ERP platform centralizes all core operations for **Kits Akshar Institute of Technology**:
+
+- **Authentication** — JWT with refresh token rotation, account locking, Redis-based blacklisting
+- **Attendance** — Bulk marking, correction with audit trail, defaulters detection, monthly reports
+- **Examinations** — Session management, marks entry with validation, SGPA/CGPA calculation, hall ticket generation
+- **Finance** — Fee structures, automated invoice generation (KITS-YYYY-NNNNNN format), Razorpay payment gateway
+- **Operations** — Hostel block/room allocation, library book issue/return with fines, transport route & pass management
+- **Analytics** — Dashboard aggregations with Redis caching for admin, faculty, and student views
+- **Notifications** — In-app notifications, real-time WebSocket push, SMTP email delivery
+- **Exam Cell (Legacy)** — 20+ page autonomous exam cell module with independent Drizzle-based database operations
+
+The system enforces strict **Role-Based Access Control (RBAC)** across 11 role types.
 
 ---
 
-## 2. Core Features & Modules
+## 2. Core Modules
 
-### 🏫 Admin Dashboard & User Management
-- **Centralized Data Command:** Full CRUD operations on all users (Students, Faculty, Staff).
-- **Institution Configurations:** Settings for branches, active semesters, and global system states (e.g., marks entry auto-lock).
-- **Audit Logs:** Track user sessions, critical updates, and permissions changes.
+### 🔐 Authentication & Authorization
+| Feature | Details |
+|---------|---------|
+| JWT Access + Refresh Tokens | 15m access / 7d refresh, automatic rotation |
+| Account Locking | 5 failed attempts → 30 min lockout |
+| Token Blacklisting | Redis-based revocation on logout |
+| Password Reset | Email-based with 1-hour expiry tokens |
+| RBAC Roles | `SUPER_ADMIN`, `ADMIN`, `HOD`, `FACULTY`, `STUDENT`, `EXAM_CELL`, `ACCOUNTS`, `HOSTEL_WARDEN`, `LIBRARIAN`, `PRINCIPAL`, `STAFF` |
 
-### 👩‍🏫 Faculty Module
-- **Attendance Register:** Real-time capture of student attendance per class and section.
-- **Mid-Marks Management:** Comprehensive marks submission interface with automated mathematical rules and edge-case handling (e.g., handling terminal students in batches).
-- **Soft Skills & IPR Management:** Specialized entry formats for unique lab/skill subjects (like Technical IPR and Design Thinking).
+### 📋 Attendance Management
+- Faculty marks attendance per subject (bulk API)
+- Student/subject-level attendance views
+- Corrections with audit trail
+- Defaulters detection (< 75% threshold)
+- Monthly reports with day-wise breakdown
 
-### 🎓 Student Dashboard
-- **Profile & Analytics:** Visibility into semester grades, aggregate scores, attendance deficiency, and timetable schedules.
-- **Lateral Entry Support:** Tailored curriculum paths and batch integrations specifically accommodating lateral entry students.
-- **Real-Time Notifications:** Exam alerts and institution-wide announcements.
+### 📝 Examination System
+- Exam session CRUD (name, semester, dates)
+- Marks entry with max-marks validation
+- Internal marks computation (includes MCA special rule: `Ceil((Mid1 + Mid2) / 2)`)
+- SGPA/CGPA calculation with grade mapping
+- Hall ticket generation with attendance eligibility checks (≥ 75%)
+- Result publication with notification dispatch
 
-### 📝 Exam Cell Module
-- **Secure Processing:** Grade processing, complex transcript generation, and report generation workflows.
-- **Automated Calculations:** Logic maps implementing standard university formulas alongside special handling (e.g., MCA Internal Marks averaging `Ceil((Mid1 + Mid2) / 2)`.
-- **Institutional Branding:** Output PDFs directly stamped with "Kits Akshar Institute of Technology" letterheads and official watermarks.
+### 💰 Finance & Payments
+- Fee structure management (TUITION, HOSTEL, TRANSPORT, LAB, EXAM, etc.)
+- Automated invoice generation with sequential numbering
+- **Razorpay** payment gateway integration (checkout + webhooks)
+- PDF receipt generation
+- Outstanding dues tracking
+
+### 🏢 Operations
+| Sub-module | Capabilities |
+|------------|-------------|
+| **Hostel** | Block & room management, student allocation/deallocation, occupancy tracking |
+| **Library** | Book CRUD, issue/return with due dates, overdue fine calculation, student card management |
+| **Transport** | Route management, student pass assignment, availability tracking |
+
+### 📊 Analytics
+- Admin overview stats (students, faculty, finances, operations)
+- Attendance trends by department (30-day rolling)
+- Exam pass rate by session
+- All endpoints cached in Redis (15m–12h TTL)
+
+### 🔔 Notifications
+- In-app CRUD with unread counts
+- Real-time push via Socket.io
+- SMTP email dispatch (fee reminders, attendance warnings, result notifications)
+- BullMQ rate-limited email worker (5/sec)
+
+### 📋 Audit System
+- Centralized audit logging for all sensitive operations
+- Admin-only paginated, filterable audit log viewer
+- Tracks user, action, resource, old/new values, IP, user-agent
+
+### 🎓 Exam Cell (Legacy Module)
+- 20+ page autonomous exam cell frontend
+- Independent Drizzle-based backend (preserved but excluded from TS compilation)
+- MID marks entry, lab marks, nominal rolls, promotions, autonomous affiliations
+- Institutional branding in PDFs and reports
 
 ---
 
 ## 3. Technology Stack
 
-### Frontend Client
-- **Framework:** React 18
-- **Build Tool:** Vite
-- **Styling:** Tailwind CSS & PostCSS
-- **Language:** TypeScript
-- **State Management:** Custom Hooks + Context API
-- **Routing:** React Router v6
+### Frontend
+| Technology | Purpose |
+|-----------|---------|
+| React 18 | UI framework |
+| Vite 5 | Build tool |
+| TypeScript | Type safety |
+| TailwindCSS 3 | Utility-first styling |
+| TanStack Query | Server state management (exam cell module) |
+| React Hook Form + Zod | Form validation |
+| React Router v6 | Client-side routing |
+| Socket.io Client | Real-time WebSocket |
+| Sonner | Toast notifications |
+| Recharts | Dashboard charts |
+| Lucide Icons | Icon system |
+| Framer Motion | Animations |
 
-### Backend API Serve
-- **Runtime Environment:** Node.js
-- **Framework:** Express.js (or equivalent lightweight framework)
-- **Language:** TypeScript
-- **ORM / Database Tools:** Prisma ORM
-- **Authentication:** JSON Web Tokens (JWT) & bcrypt
+### Backend
+| Technology | Purpose |
+|-----------|---------|
+| Node.js | Runtime |
+| Express.js | HTTP framework |
+| TypeScript | Type safety |
+| Prisma ORM | Database access (PostgreSQL) |
+| JWT + bcrypt | Authentication |
+| BullMQ | Background job processing |
+| Socket.io | WebSocket server |
+| Nodemailer | SMTP email |
+| Razorpay SDK | Payment processing |
+| Helmet | Security headers |
+| ioredis | Redis client |
 
-### Infrastructure & Services
-- **Database:** PostgreSQL (Target environment)
-- **Caching Layer:** Redis Server
-- **Containerization:** Docker & Docker Compose
-- **Version Control:** Git & GitHub
+### Infrastructure
+| Technology | Purpose |
+|-----------|---------|
+| PostgreSQL | Primary database |
+| Redis | Caching, token blacklist, BullMQ broker |
+| Docker Compose | Redis containerization |
+| Nginx | Production reverse proxy |
 
 ---
 
 ## 4. System Architecture
 
-The application adopts a decoupled architecture relying on RESTful principles over HTTP. 
-
 ```mermaid
-graph TD;
-    Client[Web Browser - React/Vite App] -->|HTTPS REST API| Server[Node.js Backend]
-    Server -->|Queries| Redis[Redis Cache]
-    Server -->|Prisma Calls| DB[(PostgreSQL Database)]
-    Server -->|Read/Write| Storage[Local Uploads/Storage]
+graph TD
+    Client["React SPA (Vite)"] -->|REST API| Server["Express.js Backend"]
+    Client -->|WebSocket| Socket["Socket.io"]
+    Server --> Prisma["Prisma ORM"]
+    Prisma --> DB["PostgreSQL"]
+    Server --> RedisCache["Redis Cache"]
+    Server --> BullMQ["BullMQ Workers"]
+    BullMQ --> RedisCache
+    BullMQ --> SMTP["SMTP (Gmail)"]
+    Socket --> RedisCache
+    Client -->|Checkout| Razorpay["Razorpay Gateway"]
+    Razorpay -->|Webhook| Server
 ```
 
-**Key Architectural Decisions:**
-1. **Service Repository Pattern:** Data access logic (Prisma) is abstracted by Domain Services (e.g. `attendance.service.ts`).
-2. **Stateless Auth:** Entirely JWT driven. Sessions are cross-checked against a Redis cache for immediate invalidation.
-3. **Optimizations:** Redis provides ultra-fast retrieval for non-mutating dashboards and reporting aggregates.
+**Architecture Principles:**
+1. **Domain-Driven Structure** — `src/domain/{module}/` with co-located service + routes
+2. **Stateless Auth** — JWT tokens validated per-request, blacklist checked via Redis
+3. **Cache-First Analytics** — Dashboard data served from Redis with configurable TTL
+4. **Event-Driven Notifications** — Socket.io rooms by user ID and role
 
 ---
 
-## 5. Project Directory Structure
+## 5. Project Structure
 
 ```text
-📦 College_complete_erp
-├── 📁 client/               # React Frontend (Vite)
-│   ├── 📁 public/           # Static assets, branding items
-│   ├── 📁 src/
-│   │   ├── 📁 components/   # Reusable UI elements & Protected routes
-│   │   ├── 📁 hooks/        # Custom React hooks (e.g., useAuth, useDashboardData)
-│   │   ├── 📁 pages/        # Route wrappers (Admin, Faculty, Student, Exams)
-│   │   ├── 📁 assets/       # Icons and UI images
-│   │   ├── 📁 styles/       # Sub-stylesheets
-│   │   └── App.tsx          # Client entrypoint & Router
-│   ├── package.json
-│   ├── tailwind.config.js
-│   └── vite.config.ts
-├── 📁 src/                  # Node.js Backend 
-│   ├── 📁 core/             # Generic wrappers (Cache, Middleware, Settings)
-│   ├── 📁 domain/           # Business logic (Exams, Attendance, Identity, Marks)
-│   ├── 📁 scripts/          # Migration files, token fixers
-│   └── server.ts            # Server bootstrap
-├── 📁 prisma/               # Schema definitions and DB migrations
-├── 📁 tests/                # Automated API and Unit Tests
-├── 📁 uploads/              # Local file artifacts
-├── docker-compose.yml       # Blueprint for orchestrating Redis/DB containers
-├── package.json             # Root-level dependencies
-├── tsconfig.json            # TypeScript compiler options
-└── .env                     # Secrets (Do NOT commit)
+📦 College_complete_erp/
+├── 📁 client/                          # React Frontend
+│   └── 📁 src/
+│       ├── 📁 api/                     # Axios client with interceptors
+│       ├── 📁 components/
+│       │   ├── 📁 auth/                # ProtectedRoute
+│       │   ├── 📁 layout/              # AppShell, Sidebar, TopBar
+│       │   └── 📁 ui/                  # 50+ shadcn/ui components
+│       ├── 📁 examcell/                # Legacy exam cell frontend (20+ pages)
+│       ├── 📁 pages/
+│       │   ├── 📁 admin/               # Dashboard, Users, Finance, Hostel, Library, Transport...
+│       │   ├── 📁 auth/                # LoginPage
+│       │   ├── 📁 faculty/             # Dashboard, Attendance, Marks Entry
+│       │   ├── 📁 landing/             # Public landing page
+│       │   └── 📁 student/             # Dashboard, Attendance, Results, Fees, Timetable
+│       ├── App.tsx                      # Router + route definitions
+│       └── main.tsx                     # Entry point + Toaster
+│
+├── 📁 src/                              # Node.js Backend
+│   ├── 📁 core/
+│   │   ├── 📁 cache/                   # Redis service + CacheManager (coalescing, jitter)
+│   │   ├── 📁 common/exceptions/       # APIError class
+│   │   ├── 📁 database/                # Prisma client singleton
+│   │   ├── 📁 middlewares/             # auth, cache, pagination, rateLimiter, tracing
+│   │   └── 📁 websockets/             # Socket.io gateway + emitter
+│   ├── 📁 domain/
+│   │   ├── 📁 analytics/               # AnalyticsService + routes
+│   │   ├── 📁 attendance/              # AttendanceService + routes
+│   │   ├── 📁 audit/                   # AuditService + routes
+│   │   ├── 📁 auth/                    # AuthService + router (login, refresh, logout, password)
+│   │   ├── 📁 examcell/                # Legacy Drizzle module (excluded from TS)
+│   │   ├── 📁 exams/                   # MarksService + routes (sessions, marks, hall tickets)
+│   │   ├── 📁 finance/                 # FinanceService + routes (fees, invoices, Razorpay)
+│   │   ├── 📁 notifications/           # NotificationService + EmailService + router
+│   │   ├── 📁 operations/              # Hostel + Library + Transport services + routes
+│   │   └── 📁 queues/                  # BullMQ workers (email, exam processing)
+│   ├── 📁 types/express/               # Express type augmentation
+│   └── server.ts                        # App bootstrap, middleware, routes, Socket.io, graceful shutdown
+│
+├── 📁 prisma/
+│   ├── schema.prisma                    # 31 models, 6 enums, 600+ lines
+│   └── seed.ts                          # Default admin + sample data
+│
+├── docker-compose.yml                   # Redis container
+├── nginx.conf                           # Production reverse proxy config
+├── tsconfig.json                        # Backend TS config
+├── package.json                         # Root dependencies + scripts
+└── .env.example                         # Environment variable template
 ```
 
 ---
 
-## 6. Prerequisites & Environment
+## 6. Prerequisites
 
-Before attempting to run this application, ensure that you have standard development tools installed:
-- **Node.js** (v18.x.x or higher)
-- **npm** (v9.x.x or higher)
-- **Docker Engine** (For native Redis and Database spin-up)
+- **Node.js** ≥ 18.x
+- **npm** ≥ 9.x
+- **PostgreSQL** ≥ 14 (running locally or remote)
+- **Docker** (for Redis)
 - **Git**
 
 ---
 
-## 7. Installation & Local Setup
+## 7. Installation & Setup
 
-### Step 1: Clone the Repository
 ```bash
+# 1. Clone
 git clone https://github.com/surendravarikallu/College_ERP.git
 cd College_ERP
-```
 
-### Step 2: Install Backend Dependencies
-Run npm in the root to install server packages.
-```bash
+# 2. Install all dependencies (backend + frontend via postinstall)
 npm install
-```
 
-### Step 3: Install Frontend Dependencies
-Navigate to the client layer and install visual packages.
-```bash
-cd client
-npm install
-cd ..
-```
+# 3. Copy environment template
+cp .env.example .env
+# Edit .env with your database URL, JWT secrets, Razorpay keys, SMTP credentials
 
-### Step 4: Boot Infrastructure
-A minimal `docker-compose.yml` ensures Redis (and optionally the DB) are running without cluttering your OS.
-```bash
+# 4. Start Redis
 docker-compose up -d
-```
-*Note: Verify Redis is active on `localhost:6379`.*
 
-### Step 5: Start Servers in Development Mode
-You can spin up the client and server concurrently (if a macro script is defined), or in two separate terminals.
-
-**Terminal A (Backend):**
-```bash
-npm run dev
-```
-
-**Terminal B (Frontend):**
-```bash
-cd client
-npm run dev
-```
-
----
-
-## 8. Configuration (Environment Variables)
-
-A template is provided via `.env.example`. Duplicate this file and rename to `.env`.
-
-```env
-# SERVER CONFIG
-PORT=5000
-NODE_ENV=development
-
-# DATABASE CONFIG
-DATABASE_URL="postgresql://user:password@localhost:5432/college_erp_db?schema=public"
-
-# AUTHENTICATION
-JWT_SECRET="YOUR_SUPER_SECRET_KEY"
-JWT_EXPIRES_IN="8h"
-
-# CACHE CONFIG
-REDIS_URL="redis://localhost:6379"
-
-# APP PREFERENCES
-INSTITUTION_NAME="Kits Akshar Institute of Technology"
-```
-*Warning: Do not commit your updated `.env` file!*
-
----
-
-## 9. Database Management & Prisma Setup
-
-Prisma ensures full type-safety between the database schema and TypeScript application state. 
-
-**Applying migrations locally:**
-```bash
+# 5. Run database migration
 npx prisma migrate dev --name init
-```
 
-**Generating the Prisma Client:**
-Whenever `schema.prisma` is modified, you must regenerate the client.
-```bash
-npx prisma generate
-```
-
-**Seeding the database:**
-```bash
+# 6. Seed default users
 npx prisma db seed
-```
-This populates the system with the default Admin user, placeholder faculty, and dummy student data required for interface testing.
 
----
-
-## 10. Caching Strategy (Redis)
-
-Redis is deeply integrated in `src/core/cache/redis.service.ts` and `cache.manager.ts`. 
-
-- **Token Blacklisting**: Revoked tokens on logout drop into Redis to ensure complete invalidation.
-- **Reporting Tiers**: Soft Skills reports, IPR reports, and general class demographics are cached to reduce aggregate query demands on PostgreSQL.
-- Time-To-Live (TTL) ensures stale data never overstays its welcome. Marks are forcefully invalidated upon `UPDATE` events.
-
----
-
-## 11. API Reference & Integrations
-
-The backend provides several namespaced routes categorized by domain functionality.
-
-| Endpoint | Method | Role | Description |
-|---|---|---|---|
-| `/api/auth/login` | `POST` | Public | Obtains Access Tokens |
-| `/api/users/profile` | `GET` | All | Retrieves authenticated user schema |
-| `/api/identity/lateral` | `GET` | Admin/Faculty | Retrieves active Lateral Entry students |
-| `/api/attendance/mark` | `POST` | Faculty | Submits bulk attendance vectors |
-| `/api/marks/mid-marks` | `PUT` | Faculty | Updates mid-marks array |
-| `/api/exams/publish` | `POST` | Exam Cell | Finalizes results and initiates reporting |
-
----
-
-## 12. Frontend Architecture & Theming
-
-The client uses **Vite** coupled with **Tailwind CSS**. 
-
-**Branding Protocol:**
-The identity parameters enforce `"Kits Akshar Institute of Technology"` in sidebar components, PDF exports, and splash screens. Design aesthetics rely on a structured palette located within `client/tailwind.config.js`.
-
-**Authentication Logic:**
-The App utilizes a `<ProtectedRoute>` Higher Order Component tracking Role constraints:
-```tsx
-<Route path="/faculty/dashboard" element={
-  <ProtectedRoute requiredRole="FACULTY">
-    <FacultyDashboard />
-  </ProtectedRoute>
-} />
+# 7. Start development servers (backend + frontend concurrently)
+npm run dev
 ```
 
----
+**Default Login Credentials** (after seeding):
 
-## 13. Specific Implementation Details
-
-The development cycle has hardened specific use-cases that define this application:
-
-1. **Auto-Lock Mechanisms:** Forms for MID Marks natively auto-lock based on global toggle statuses. They tolerate partial numerical entries (preventing 0-coercing) and save smoothly without premature locking.
-2. **MCA Grade Computations:** Instead of standard 80/20 algorithms, designated branches like MCA compute scores specifically via averaged aggregations, e.g., `Ceil((Mid1 + Mid2) / 2)`.
-3. **Special Semantics Subjects:** Non-standard subjects (e.g. "Technical IPR", "Soft Skills", "Design Thinking", "Innovation") bypass traditional lab boundaries and filter correctly into native reporting tools without breaking grade loops.
-4. **Visibility Filtering:** Expanding queries intelligently capture overlapping branch structures—guaranteeing Lateral entry students perfectly synchronize into target batch-views.
+| Role | Email | Password |
+|------|-------|----------|
+| Super Admin | `admin` | `admin123` |
+| Faculty | `faculty@kitsakshar.edu.in` | `admin123` |
+| Student | `student@kitsakshar.edu.in` | `admin123` |
 
 ---
 
-## 14. Deployment Guide
+## 8. Environment Variables
 
-### Building the Project
-Both applications are standalone. Build the React artifact, then serve it implicitly or reverse-proxy standard.
+See [`.env.example`](.env.example) for the complete template.
 
-**Building Frontend:**
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `PORT` | Backend server port | `8091` |
+| `NODE_ENV` | Environment | `development` |
+| `DATABASE_URL` | PostgreSQL connection string | — |
+| `JWT_SECRET` | Access token signing secret | — |
+| `JWT_REFRESH_SECRET` | Refresh token signing secret | — |
+| `JWT_EXPIRES_IN` | Access token TTL | `15m` |
+| `JWT_REFRESH_EXPIRES_IN` | Refresh token TTL | `7d` |
+| `REDIS_URL` | Redis connection URL | `redis://localhost:6379` |
+| `RAZORPAY_KEY` | Razorpay API key | — |
+| `RAZORPAY_SECRET` | Razorpay API secret | — |
+| `RAZORPAY_WEBHOOK_SECRET` | Razorpay webhook verification | — |
+| `SMTP_USER` | Gmail address for sending emails | — |
+| `SMTP_PASS` | Gmail app password | — |
+| `FRONTEND_URL` | Frontend URL for CORS + email links | `http://localhost:5173` |
+
+---
+
+## 9. Database Setup
+
+### Prisma Schema Overview
+
+The schema contains **31 models** and **6 enums** covering:
+
+| Domain | Models |
+|--------|--------|
+| Identity | `User`, `RefreshToken`, `PasswordReset` |
+| Audit | `AuditLog` |
+| Institution | `Department`, `Student`, `Faculty`, `Batch`, `Subject`, `FacultySubjectMapping` |
+| Academic | `TimetableSlot`, `AcademicCalendar`, `Attendance`, `LeaveApplication` |
+| Exams | `ExamSession`, `Mark`, `GradeRecord`, `HallTicket` |
+| Finance | `FeeStructure`, `FeeInvoice`, `PaymentTransaction`, `Scholarship` |
+| Operations | `HostelBlock`, `HostelRoom`, `HostelAllocation`, `LibraryBook`, `LibraryCard`, `BookIssue`, `TransportRoute`, `TransportPass` |
+| Communication | `Notification` |
+
+### Common Commands
 ```bash
-cd client
-npm run build
+npx prisma migrate dev --name <description>  # Create & apply migration
+npx prisma generate                           # Regenerate client after schema change
+npx prisma db seed                            # Seed default data
+npx prisma studio                             # Visual database browser
 ```
-Produces optimized static files inside `/client/dist`.
 
-**Building Backend:**
+---
+
+## 10. API Reference
+
+All API endpoints are prefixed with `/api/v1/`.
+
+### Authentication (`/api/v1/auth`)
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `POST` | `/login` | Public | Login with email + password |
+| `POST` | `/refresh` | Public | Rotate refresh token |
+| `POST` | `/logout` | Bearer | Revoke tokens + blacklist |
+| `POST` | `/forgot-password` | Public | Send reset email |
+| `POST` | `/reset-password` | Public | Reset with token |
+| `POST` | `/change-password` | Bearer | Change password (authenticated) |
+| `GET` | `/me` | Bearer | Get current user profile |
+
+### Attendance (`/api/v1/attendance`)
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `POST` | `/mark` | Faculty | Bulk mark attendance |
+| `GET` | `/student/:id` | Student/Faculty | View student attendance |
+| `PUT` | `/correct` | Faculty | Correct a record (audited) |
+| `GET` | `/defaulters` | Admin/Faculty | Students < 75% |
+| `GET` | `/monthly-report` | Admin/Faculty | Day-wise monthly breakdown |
+
+### Exams (`/api/v1/exams`)
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `POST` | `/sessions` | Admin | Create exam session |
+| `GET` | `/sessions` | All | List exam sessions |
+| `POST` | `/sessions/:id/marks` | Faculty | Enter marks |
+| `GET` | `/hall-ticket/:studentId/:sessionId` | Student | Generate hall ticket |
+| `POST` | `/results/publish` | Admin | Publish results + notify |
+| `GET` | `/grades/:studentId` | Student | SGPA/CGPA + transcripts |
+
+### Finance (`/api/v1/fees`)
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `POST` | `/structures` | Admin | Create fee structure |
+| `GET` | `/structures` | Admin | List fee structures |
+| `POST` | `/invoices/generate` | Admin | Generate invoices |
+| `POST` | `/payment/initiate` | Student | Start Razorpay checkout |
+| `POST` | `/payment/webhook` | Razorpay | Payment verification |
+| `GET` | `/dues` | Student | View outstanding fees |
+| `GET` | `/receipt/:invoiceId` | Student | Download PDF receipt |
+
+### Operations (`/api/v1/operations`)
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `POST` | `/hostel/blocks` | Admin | Create hostel block |
+| `POST` | `/hostel/allocate` | Admin | Allocate student to room |
+| `POST` | `/library/books` | Admin | Add book |
+| `POST` | `/library/issue` | Librarian | Issue book |
+| `POST` | `/library/return` | Librarian | Return book (auto fine) |
+| `POST` | `/transport/routes` | Admin | Create transport route |
+
+### Analytics (`/api/v1/analytics`)
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/overview` | Admin | Dashboard stats |
+| `GET` | `/attendance-trends` | Admin/HOD | Dept-wise attendance |
+| `GET` | `/exam-performance` | Admin/HOD/Exam Cell | Pass rates |
+
+### Other
+| Module | Prefix | Description |
+|--------|--------|-------------|
+| Audit | `/api/v1/audit` | Admin-only audit log viewer |
+| Notifications | `/api/v1/notifications` | CRUD + unread count |
+| Exam Cell | `/api/ec/` | Legacy autonomous routes |
+
+---
+
+## 11. Frontend Architecture
+
+### Role-Based Routing
+The app uses `<ProtectedRoute>` to enforce role checks via JWT payload inspection:
+
+```
+/admin/*      → SUPER_ADMIN, ADMIN
+/faculty/*    → FACULTY, HOD, PRINCIPAL
+/student/*    → STUDENT
+```
+
+### Component Library
+50+ reusable shadcn/ui components in `client/src/components/ui/`:
+Button, Card, Dialog, Table, Tabs, Select, Input, Badge, Accordion, Toast, Chart, Sidebar, Sheet, and more.
+
+### Theme System
+Dark/light mode via `ThemeProvider` with system preference detection. Storage key: `erp-theme`.
+
+---
+
+## 12. Real-Time Features
+
+### Socket.io Gateway
+- Backend: `src/core/websockets/gateway.ts`
+- Client: `AppShell.tsx` connects with JWT auth
+- Rooms: `user:{userId}`, `role:{roleName}`
+
+### Events
+| Event | Direction | Description |
+|-------|-----------|-------------|
+| `notification:new` | Server → Client | Push notification toast |
+
+---
+
+## 13. Payment Integration
+
+### Razorpay Flow
+1. Student clicks "Pay Now" on invoice
+2. Frontend calls `POST /api/v1/fees/payment/initiate`
+3. Backend creates Razorpay order, returns `order_id` + `key`
+4. Frontend opens Razorpay Checkout modal
+5. On success, Razorpay sends webhook to `POST /api/v1/fees/payment/webhook`
+6. Backend verifies signature, updates invoice status, generates receipt
+
+> **Note:** The webhook endpoint skips JSON body parsing to receive the raw body for HMAC verification.
+
+---
+
+## 14. Security Architecture
+
+| Layer | Implementation |
+|-------|---------------|
+| **Auth** | JWT + bcrypt (12 rounds), refresh token rotation, Redis blacklist |
+| **Account Protection** | 5-attempt lockout (30 min), failed login tracking |
+| **Rate Limiting** | Global: 100 req/15min, Auth: 20 req/15min |
+| **Headers** | Helmet (CSP, XSS, HSTS, X-Frame-Options) |
+| **CORS** | Strict origin whitelist in production |
+| **Request Tracing** | Correlation ID (`x-correlation-id`) on every request |
+| **Audit Trail** | All sensitive operations logged with IP + user-agent |
+| **Password Reset** | Time-limited tokens, single-use enforcement |
+
+---
+
+## 15. Caching Strategy
+
+Powered by `CacheManager` (`src/core/cache/cache.manager.ts`):
+
+| Feature | Description |
+|---------|-------------|
+| **Request Coalescing** | Prevents thundering herd on cache miss |
+| **TTL Jitter** | ±10% randomization to prevent synchronous expiry |
+| **Namespace Invalidation** | `CacheManager.invalidate('analytics:*')` |
+| **Token Blacklist** | `blacklist:{token}` with remaining TTL |
+
+### Cache Keys
+| Key Pattern | TTL | Used By |
+|-------------|-----|---------|
+| `analytics:overview` | 15 min | Admin dashboard |
+| `analytics:attendanceTrends` | 1 hour | Attendance charts |
+| `analytics:examPerformance` | 12 hours | Exam pass rates |
+
+---
+
+## 16. Background Jobs
+
+Powered by **BullMQ** (`src/domain/queues/workers.ts`):
+
+| Queue | Job | Description |
+|-------|-----|-------------|
+| `EmailQueue` | — | Rate-limited SMTP dispatch (5/sec) |
+| `ExamQueue` | `generate_hall_tickets` | Batch hall ticket generation with progress |
+| `ExamQueue` | `publish_results` | Result publication + notification |
+
+Workers start automatically on server boot (disabled in `test` environment).
+
+---
+
+## 17. Deployment
+
+### Production Build
 ```bash
-npm run build
+npm run build          # Builds both frontend + backend
+npm run start          # Starts production server from dist/
 ```
-Compiles TypeScript into `/dist`.
 
-### Production Deployment (PM2 + Nginx Example)
-1. Configure Nginx to serve `client/dist` statically.
-2. Use PM2 to daemonize the backend node instance:
-   ```bash
-   pm2 start dist/server.js --name "college-api"
-   ```
-3. Expose port 5000 to local block and bridge to `api.college.edu`.
-
----
-
-## 15. Security Best Practices
-
-- **Sanitization:** All endpoints parsing strings filter for SQLi patterns.
-- **Rate-Limiting:** Authentication boundaries apply Express-Rate-Limit middleware restricting bruteforcing attempts.
-- **CORS Configuration:** `server.ts` explicitly whitelist authorized domains.
-- **Password Hashes:** Unidirectional hashes with heavy bcrypt salting securely store faculty & student PINs/passwords.
-
----
-
-## 16. Testing & Quality Assurance
-
-Quality loops assure systemic stability throughout deployments.
+### PM2 Process Manager
 ```bash
-npm run test       # Executes jest environment suite
-npm run lint       # Runs ESLint against code formats
+pm2 start dist/server.js --name "kits-erp" -i max
+pm2 save
 ```
-API evaluations are verified within `tests/` leveraging supertest against ephemeral SQLite databases prior to commits. 
+
+### Nginx
+A production-ready `nginx.conf` is included with:
+- SSL/TLS termination (Let's Encrypt)
+- Rate limiting (general: 30r/s, auth: 5r/s)
+- WebSocket proxy for Socket.io
+- SPA fallback (`try_files`)
+- Static asset caching (1 year)
+- Security headers (HSTS, XSS, etc.)
+- Razorpay webhook passthrough (no rate limit)
+
+### Docker Compose
+```bash
+docker-compose up -d   # Starts Redis with authentication
+```
 
 ---
 
-## 17. Contributing & Version Control
+## 18. Troubleshooting
 
-We welcome contributions strictly according to specific protocols.
+**Q: Redis won't connect**
+Check Docker is running: `docker ps`. Ensure `REDIS_URL` in `.env` matches the `docker-compose.yml` password.
 
-1. Create Feature Branches: `git checkout -b feature/Add-New-Report-Template`
-2. Run formatters: All frontend work must pass Prettier standards.
-3. Commit verbosely: Clarify module updates directly. 
-4. Merge Requirements: Code is merged strictly via PRs validated by maintainers. Ensure `.gitignore` policies are respected (never push `.env` files).
+**Q: Prisma migration fails**
+Ensure PostgreSQL is running and `DATABASE_URL` is correct. Try `npx prisma db push` for development.
 
----
+**Q: Login returns 401 but credentials are correct**
+Check if the account is locked (`lockedUntil` in DB). Reset with: `npx prisma studio` → find user → set `lockedUntil` to null.
 
-## 18. Troubleshooting & FAQ
+**Q: Exam cell module not loading**
+The legacy exam cell (`src/domain/examcell/`) is excluded from TypeScript compilation. It requires `drizzle-orm` + `pg` to be reinstalled if you need it at runtime.
 
-**Q1: Redis container is crashing. How do I fix it?**
-Check if local OS ports on 6379 are bound by existing cache services. `docker ps -a` and kill conflicting hosts.
-
-**Q2: The "Technical IPR" marks are not saving for the last student!**
-Ensure the input form blur event trigger completes its backend sync promise before unmounting the React table row. This has been remediated in the latest patch, pull the `main` branch.
-
-**Q3: Some students are completely missing from the directory?**
-Check if the "Lateral Entry Student Profile" filters are bypassing valid sub-batches. The query expansion feature handles this but might require a DB migration if schema constraints were missed locally.
+**Q: Razorpay checkout not opening**
+Ensure the Razorpay script loads (`https://checkout.razorpay.com/v1/checkout.js`). Check browser console for CSP errors.
 
 ---
 
-## 19. License & Acknowledgments
+## 19. License
 
-*Copyright Analytics & Engineering © 2026. All rights Reserved.* 
+*Copyright © 2026. All Rights Reserved.*
 
-Designed meticulously for and alongside **Kits Akshar Institute of Technology**. No segments of this proprietary software may be reproduced or distributed publicly outside approved institutional guidelines.
+Designed for **Kits Akshar Institute of Technology**. This is proprietary software — no segments may be reproduced or distributed without institutional approval.
 
 <p align="center">Made with ❤️ for education & excellence.</p>
