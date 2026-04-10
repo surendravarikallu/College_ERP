@@ -22,6 +22,7 @@ async function main() {
   const saltRounds = 10;
   const passwordHash = await bcrypt.hash(plainPassword, saltRounds);
 
+  const { randomUUID } = require('crypto');
   const adminEmail = 'admin';
   await prisma.user.upsert({
     where: { email: adminEmail },
@@ -30,6 +31,7 @@ async function main() {
       passwordHash,
     },
     create: {
+      id: randomUUID(),
       institutionId: institution.id,
       email: adminEmail,
       passwordHash,
