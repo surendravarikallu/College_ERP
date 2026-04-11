@@ -14,7 +14,15 @@ import HostelManagement from './pages/admin/HostelManagement';
 import LibraryManagement from './pages/admin/LibraryManagement';
 import TransportManagement from './pages/admin/TransportManagement';
 import InventoryManagement from './pages/admin/InventoryManagement';
+import InventoryManagement from './pages/admin/InventoryManagement';
 import FinanceManagement from './pages/admin/FinanceManagement';
+
+// New Pages Added in SP-05
+import { AdminExamsPage } from './pages/admin/AdminExamsPage';
+import { AdminReportsPage } from './pages/admin/AdminReportsPage';
+import { SettingsPage } from './pages/admin/SettingsPage';
+import { HRDashboard } from './pages/hr/HRDashboard';
+import { PayslipView } from './pages/hr/PayslipView';
 
 // Student pages
 import StudentAttendance from './pages/student/StudentAttendance';
@@ -61,14 +69,16 @@ const App = () => {
             <Route path="users" element={<UserManagement />} />
             <Route path="academics" element={<AcademicSetup />} />
             <Route path="attendance" element={<PlaceholderPage title="Attendance Reports" icon="📋" desc="Department-wise attendance reports and analytics" />} />
-            <Route path="exams" element={<PlaceholderPage title="Exam Management" icon="📝" desc="Schedule exams, manage scripts, publish results" />} />
+            <Route path="exams" element={<AdminExamsPage />} />
+            <Route path="hr" element={<HRDashboard />} />
+            <Route path="hr/payslip/:payslipId" element={<PayslipView />} />
             <Route path="finance" element={<FinanceManagement />} />
             <Route path="hostel" element={<HostelManagement />} />
             <Route path="library" element={<LibraryManagement />} />
             <Route path="transport" element={<TransportManagement />} />
             <Route path="inventory" element={<InventoryManagement />} />
-            <Route path="reports" element={<PlaceholderPage title="Reports & Analytics" icon="📈" desc="Generate and export institutional reports" />} />
-            <Route path="settings" element={<PlaceholderPage title="System Settings" icon="⚙️" desc="Institution configuration and preferences" />} />
+            <Route path="reports" element={<AdminReportsPage />} />
+            <Route path="settings" element={<SettingsPage />} />
 
             {/* Exam Cell Module */}
             <Route path="examcell/login" element={

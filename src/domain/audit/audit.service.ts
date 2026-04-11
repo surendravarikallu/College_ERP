@@ -24,7 +24,6 @@ export class AuditService {
 
       await prisma.auditLog.create({
         data: {
-          id: `log-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
           institutionId,
           userId,
           action,

@@ -47,11 +47,13 @@ export class FinanceService {
   /**
    * Generate invoices for students.
    */
-  static async generateInvoices(feeStructureId: string, studentIds: string[]) {
+  static async generateInvoices(data: { studentIds: string[]; feeStructureId: string; academicYear: string; semester: number }) {
+    const { studentIds, feeStructureId } = data;
+    const invoices: any[] = [];
+
     const feeStructure = await prisma.feeStructureNew.findUnique({ where: { id: feeStructureId } });
     if (!feeStructure) throw new APIError('NOT_FOUND', 'Fee structure not found.');
 
-    const invoices = [];
     for (const studentId of studentIds) {
       // Skip if already has invoice for this fee structure
       const existing = await prisma.feeInvoice.findFirst({
@@ -66,7 +68,8 @@ export class FinanceService {
         : 0;
       const finalAmount = Math.max(0, feeStructure.amount - discount);
 
-      const invoiceNumber = `KITS-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
+      const count = await prisma.feeInvoice.count();
+      const invoiceNumber = `KITS-${new Date().getFullYear()}-${String(count + invoices.length + 1).padStart(6, '0')}`;
 
       const invoice = await prisma.feeInvoice.create({
         data: {

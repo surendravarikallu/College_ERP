@@ -28,7 +28,7 @@ const FacultyAttendance = () => {
   useEffect(() => {
     const fetchSubjects = async () => {
       try {
-        const res = await apiClient.get('/attendance/faculty-subjects');
+        const res = await apiClient.get('/admin/my-subjects');
         setSubjects(res.data.data || []);
       } catch {
         // Fallback: show empty
@@ -42,7 +42,7 @@ const FacultyAttendance = () => {
     if (!selectedSubject) return;
     setLoading(true);
     try {
-      const res = await apiClient.get(`/attendance/students?subjectId=${selectedSubject}`);
+      const res = await apiClient.get(`/admin/students-by-subject/${selectedSubject}`);
       setStudents((res.data.data || []).map((s: any) => ({
         id: s.id,
         rollNumber: s.rollNumber,

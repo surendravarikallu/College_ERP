@@ -4,9 +4,14 @@ import crypto from 'node:crypto';
 import { prisma } from '../../core/database/prisma.client';
 import { APIError } from '../../core/common/exceptions/api.error';
 import { emailQueue } from '../../core/queues/queue.setup';
+import { redisClient } from '../../core/cache/redis.service';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-dev-key';
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'fallback-refresh-key';
+const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
+
+if (!JWT_SECRET || !JWT_REFRESH_SECRET) {
+  throw new Error('Required JWT environment variables (JWT_SECRET, JWT_REFRESH_SECRET) are missing. Production failure initiated for security.');
+}
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '15m';
 const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
@@ -79,8 +84,8 @@ export class AuthService {
     const profileId = user.student?.id || user.StudentProfile?.id || user.faculty?.id || user.FacultyProfile?.id;
 
     const payload = { id: user.id, role: user.role, profileId, institutionId: user.institutionId };
-    const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN as any });
-    const refreshToken = jwt.sign({ id: user.id, type: 'refresh' }, JWT_REFRESH_SECRET, { expiresIn: JWT_REFRESH_EXPIRES_IN as any });
+    const accessToken = jwt.sign(payload, JWT_SECRET as string, { expiresIn: JWT_EXPIRES_IN as any });
+    const refreshToken = jwt.sign({ id: user.id, type: 'refresh' }, JWT_REFRESH_SECRET as string, { expiresIn: JWT_REFRESH_EXPIRES_IN as any });
 
     // Store refresh token in DB
     const refreshExpiresInSecs = parseExpiresIn(JWT_REFRESH_EXPIRES_IN);
@@ -125,8 +130,8 @@ export class AuthService {
     const profileId = user.student?.id || user.StudentProfile?.id || user.faculty?.id || user.FacultyProfile?.id;
     const payload = { id: user.id, role: user.role, profileId, institutionId: user.institutionId };
 
-    const newAccessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN as any });
-    const newRefreshToken = jwt.sign({ id: user.id, type: 'refresh' }, JWT_REFRESH_SECRET, { expiresIn: JWT_REFRESH_EXPIRES_IN as any });
+    const newAccessToken = jwt.sign({ id: user.id, role: user.role, type: 'access' }, JWT_SECRET as string, { expiresIn: '15m' });
+    const newRefreshToken = jwt.sign({ id: user.id, type: 'refresh' }, JWT_REFRESH_SECRET as string, { expiresIn: '7d' });
 
     const refreshExpiresInSecs = parseExpiresIn(JWT_REFRESH_EXPIRES_IN);
     await prisma.refreshToken.create({
@@ -143,12 +148,24 @@ export class AuthService {
   /**
    * Logout: revoke refresh token.
    */
-  static async logout(refreshToken?: string) {
+  static async logout(refreshToken?: string, accessToken?: string) {
     if (refreshToken) {
       await prisma.refreshToken.updateMany({
         where: { token: refreshToken, revokedAt: null },
         data: { revokedAt: new Date() },
       });
+    }
+    // Blacklist the access token in Redis until it expires
+    if (accessToken) {
+      try {
+        const decoded = jwt.decode(accessToken) as any;
+        if (decoded?.exp) {
+          const ttl = decoded.exp - Math.floor(Date.now() / 1000);
+          if (ttl > 0) {
+            await redisClient.set(`blacklist:${accessToken}`, '1', 'EX', ttl);
+          }
+        }
+      } catch { /* non-blocking */ }
     }
   }
 

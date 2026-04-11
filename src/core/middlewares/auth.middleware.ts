@@ -1,7 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { redisClient } from '../cache/redis.service';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-dev-key';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is missing. Security risk: cannot fallback to dev keys.');
+}
 
 export interface AuthRequest extends Request {
   user?: {
@@ -13,7 +17,7 @@ export interface AuthRequest extends Request {
 }
 
 /**
- * JWT Authentication — verifies Bearer token and attaches user to request.
+ * JWT Authentication — verifies Bearer token, checks Redis blacklist, and attaches user to request.
  */
 export const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
@@ -25,6 +29,15 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as any;
+
+    // Check if this token has been blacklisted (e.g., via logout)
+    try {
+      const isBlacklisted = await redisClient.get(`blacklist:${token}`);
+      if (isBlacklisted) {
+        return res.status(401).json({ success: false, error: 'Token has been revoked.' });
+      }
+    } catch { /* Redis failure is non-blocking — allow request through */ }
+
     req.user = {
       id: decoded.id,
       role: decoded.role,

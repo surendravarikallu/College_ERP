@@ -89,6 +89,26 @@ examsRouter.post('/hall-tickets/:studentId', authenticateToken, requireRole('ADM
   }
 );
 
+// GET /api/v1/exams/hall-tickets/:studentId/:examSessionId/pdf — Download hall ticket PDF
+examsRouter.get('/hall-tickets/:studentId/:examSessionId/pdf', authenticateToken,
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const data = await MarksService.generateHallTicketPDF(req.params.studentId, req.params.examSessionId);
+      res.json({ success: true, pdfPath: data });
+    } catch (err) { next(err); }
+  }
+);
+
+// GET /api/v1/exams/detained/:sessionId — Get detained students
+examsRouter.get('/detained/:sessionId', authenticateToken, requireRole('ADMIN', 'SUPER_ADMIN', 'EXAM_CELL', 'HOD'),
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const data = await MarksService.getDetainedStudents(req.params.sessionId);
+      res.json({ success: true, data });
+    } catch (err) { next(err); }
+  }
+);
+
 // GET /api/v1/exams/grades/student/:studentId — Get student grades
 examsRouter.get('/grades/student/:studentId', authenticateToken,
   async (req: AuthRequest, res: Response, next: NextFunction) => {

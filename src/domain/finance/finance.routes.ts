@@ -33,7 +33,7 @@ financeRouter.post('/invoices', authenticateToken, requireRole('ADMIN', 'SUPER_A
       if (!feeStructureId || !studentIds?.length) {
         return res.status(400).json({ success: false, error: 'feeStructureId and studentIds are required' });
       }
-      const data = await FinanceService.generateInvoices(feeStructureId, studentIds);
+      const data = await FinanceService.generateInvoices({ feeStructureId, studentIds, academicYear: req.body.academicYear, semester: req.body.semester });
       res.status(201).json({ success: true, data });
     } catch (err) { next(err); }
   }
@@ -55,6 +55,16 @@ financeRouter.get('/my', authenticateToken, requireRole('STUDENT'),
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const data = await FinanceService.getStudentInvoices(req.user!.profileId || req.user!.id);
+      res.json({ success: true, data });
+    } catch (err) { next(err); }
+  }
+);
+
+// GET /api/v1/fees/invoices/student/:studentId — Admin view of student invoices
+financeRouter.get('/invoices/student/:studentId', authenticateToken, requireRole('ADMIN', 'SUPER_ADMIN', 'ACCOUNTS', 'HOD'),
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const data = await FinanceService.getStudentInvoices(req.params.studentId);
       res.json({ success: true, data });
     } catch (err) { next(err); }
   }

@@ -47,7 +47,7 @@ model AttendanceSession {
 }
 
 model AuditLog {
-  id            String   @id
+  id            String   @id @default(cuid())
   institutionId String
   userId        String?
   action        String
@@ -66,6 +66,7 @@ model Batch {
   id             String           @id
   courseId       String
   year           Int
+  isActive       Boolean          @default(true)
   Course         Course           @relation(fields: [courseId], references: [id])
   StudentProfile StudentProfile[]
   TimeSlot       TimeSlot[]
@@ -822,17 +823,17 @@ model GradeRecord {
 }
 
 model Notification {
-  id        String            @id @default(uuid())
+  id        String    @id @default(uuid())
   userId    String
   title     String
   message   String
-  body      String            @default("")
-  type      String            @default("INFO")
-  isRead    Boolean           @default(false)
+  body      String    @default("")
+  type      String    @default("INFO")
+  isRead    Boolean   @default(false)
   readAt    DateTime?
   metadata  Json?
-  createdAt DateTime          @default(now())
-  User      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  User      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, isRead])
   @@index([userId, createdAt])
@@ -909,71 +910,78 @@ model PasswordReset {
 }
 
 model Student {
-  id           String    @id @default(cuid())
-  userId       String    @unique
-  user         User      @relation(fields: [userId], references: [id])
-  name         String
-  rollNumber   String    @unique
-  departmentId String
-  department   Department @relation("DeptStudents", fields: [departmentId], references: [id])
-  batchId      String?
-  semester     Int       @default(1)
-  gender       Gender?
-  phone        String?
-  address      String?
-  guardianName String?
+  id            String     @id @default(cuid())
+  userId        String     @unique
+  user          User       @relation(fields: [userId], references: [id])
+  name          String
+  rollNumber    String     @unique
+  departmentId  String
+  department    Department @relation("DeptStudents", fields: [departmentId], references: [id])
+  batchId       String?
+  semester      Int        @default(1)
+  gender        Gender?
+  phone         String?
+  address       String?
+  guardianName  String?
   guardianPhone String?
-  isActive     Boolean   @default(true)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  isActive      Boolean    @default(true)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
 
-  attendances     NewAttendance[]
-  marks           NewMark[]
-  gradeRecordsNew NewGradeRecord[]
-  hallTicketsNew  NewHallTicket[]
-  feeInvoices     FeeInvoice[]
+  attendances      NewAttendance[]
+  marks            NewMark[]
+  gradeRecordsNew  NewGradeRecord[]
+  hallTicketsNew   NewHallTicket[]
+  feeInvoices      FeeInvoice[]
   hostelAllocation HostelAllocation[]
-  libraryCard     LibraryCard?
-  scholarshipNew  ScholarshipNew?
+  libraryCard      LibraryCard?
+  scholarshipNew   ScholarshipNew?
+  transportPasses  TransportPassNew[]
 
   @@index([departmentId])
   @@index([batchId])
 }
 
 model Faculty {
-  id           String    @id @default(cuid())
-  userId       String    @unique
-  user         User      @relation(fields: [userId], references: [id])
+  id           String     @id @default(cuid())
+  userId       String     @unique
+  user         User       @relation(fields: [userId], references: [id])
   name         String
-  employeeId   String    @unique
+  employeeId   String     @unique
   departmentId String
   department   Department @relation("DeptFaculty", fields: [departmentId], references: [id])
   designation  String?
   phone        String?
-  isActive     Boolean   @default(true)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
-  subjectMappings FacultySubjectMapping[]
-  attendances     NewAttendance[]
+  subjectMappings    FacultySubjectMapping[]
+  attendances        NewAttendance[]
+  facultyAttendances FacultyAttendance[]
+  employeeProfile    EmployeeProfile?
+  salaryStructure    SalaryStructure?
+  leaveBalance       LeaveBalance?
+  leaveApplications  LeaveApplication[]
+  payslips           Payslip[]
 
   @@index([departmentId])
 }
 
 model NewSubject {
-  id           String    @id @default(cuid())
+  id           String     @id @default(cuid())
   name         String
-  code         String    @unique
+  code         String     @unique
   departmentId String
   department   Department @relation("DeptSubjects", fields: [departmentId], references: [id])
   semester     Int
-  credits      Int       @default(3)
-  isLab        Boolean   @default(false)
-  isSpecial    Boolean   @default(false)
+  credits      Int        @default(3)
+  isLab        Boolean    @default(false)
+  isSpecial    Boolean    @default(false)
   specialType  String?
-  regulation   String    @default("R20")
-  isActive     Boolean   @default(true)
-  createdAt    DateTime  @default(now())
+  regulation   String     @default("R20")
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
 
   marks           NewMark[]
   attendances     NewAttendance[]
@@ -983,16 +991,16 @@ model NewSubject {
 }
 
 model FacultySubjectMapping {
-  id           String   @id @default(cuid())
+  id           String     @id @default(cuid())
   facultyId    String
-  faculty      Faculty  @relation(fields: [facultyId], references: [id])
+  faculty      Faculty    @relation(fields: [facultyId], references: [id])
   subjectId    String
   subject      NewSubject @relation(fields: [subjectId], references: [id])
   batchId      String?
   semester     Int
   academicYear String
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
 
   @@unique([facultyId, subjectId, semester, academicYear])
   @@index([facultyId])
@@ -1102,7 +1110,7 @@ model NewHallTicket {
 }
 
 model FeeStructureNew {
-  id           String       @id @default(cuid())
+  id           String    @id @default(cuid())
   name         String
   feeType      String
   amount       Float
@@ -1110,47 +1118,47 @@ model FeeStructureNew {
   semester     Int?
   academicYear String
   dueDate      DateTime?
-  isActive     Boolean      @default(true)
-  createdAt    DateTime     @default(now())
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
 
-  invoices     FeeInvoice[]
+  invoices FeeInvoice[]
 }
 
 model FeeInvoice {
-  id              String           @id @default(cuid())
-  invoiceNumber   String           @unique
-  studentId       String
-  student         Student          @relation(fields: [studentId], references: [id])
-  feeStructureId  String
-  feeStructure    FeeStructureNew  @relation(fields: [feeStructureId], references: [id])
-  amount          Float
-  discount        Float            @default(0)
-  finalAmount     Float
-  status          PaymentStatus    @default(PENDING)
-  dueDate         DateTime?
-  paidAt          DateTime?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  id             String          @id @default(cuid())
+  invoiceNumber  String          @unique
+  studentId      String
+  student        Student         @relation(fields: [studentId], references: [id])
+  feeStructureId String
+  feeStructure   FeeStructureNew @relation(fields: [feeStructureId], references: [id])
+  amount         Float
+  discount       Float           @default(0)
+  finalAmount    Float
+  status         PaymentStatus   @default(PENDING)
+  dueDate        DateTime?
+  paidAt         DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 
-  transactions    PaymentTransaction[]
+  transactions PaymentTransaction[]
 
   @@index([studentId])
   @@index([status])
 }
 
 model PaymentTransaction {
-  id                  String        @id @default(cuid())
-  invoiceId           String
-  invoice             FeeInvoice    @relation(fields: [invoiceId], references: [id])
-  razorpayOrderId     String        @unique
-  razorpayPaymentId   String?
-  razorpaySignature   String?
-  amount              Float
-  status              PaymentStatus @default(PENDING)
-  webhookVerified     Boolean       @default(false)
-  metadata            Json?
-  createdAt           DateTime      @default(now())
-  updatedAt           DateTime      @updatedAt
+  id                String        @id @default(cuid())
+  invoiceId         String
+  invoice           FeeInvoice    @relation(fields: [invoiceId], references: [id])
+  razorpayOrderId   String        @unique
+  razorpayPaymentId String?
+  razorpaySignature String?
+  amount            Float
+  status            PaymentStatus @default(PENDING)
+  webhookVerified   Boolean       @default(false)
+  metadata          Json?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 
   @@index([invoiceId])
   @@index([razorpayOrderId])
@@ -1166,61 +1174,61 @@ model ScholarshipNew {
 }
 
 model HostelBlock {
-  id        String       @id @default(cuid())
+  id        String          @id @default(cuid())
   name      String
   gender    Gender
-  isActive  Boolean      @default(true)
-  createdAt DateTime     @default(now())
+  isActive  Boolean         @default(true)
+  createdAt DateTime        @default(now())
   rooms     HostelRoomNew[]
 }
 
 model HostelRoomNew {
-  id         String             @id @default(cuid())
-  blockId    String
-  block      HostelBlock        @relation(fields: [blockId], references: [id])
-  roomNumber String
-  capacity   Int                @default(2)
-  occupancy  Int                @default(0)
-  monthlyFee Float              @default(0)
-  isActive   Boolean            @default(true)
+  id          String             @id @default(cuid())
+  blockId     String
+  block       HostelBlock        @relation(fields: [blockId], references: [id])
+  roomNumber  String
+  capacity    Int                @default(2)
+  occupancy   Int                @default(0)
+  monthlyFee  Float              @default(0)
+  isActive    Boolean            @default(true)
   allocations HostelAllocation[]
 }
 
 model HostelAllocation {
-  id        String       @id @default(cuid())
+  id        String        @id @default(cuid())
   studentId String
-  student   Student      @relation(fields: [studentId], references: [id])
+  student   Student       @relation(fields: [studentId], references: [id])
   roomId    String
   room      HostelRoomNew @relation(fields: [roomId], references: [id])
   fromDate  DateTime
   toDate    DateTime?
-  isActive  Boolean      @default(true)
-  createdAt DateTime     @default(now())
+  isActive  Boolean       @default(true)
+  createdAt DateTime      @default(now())
 }
 
 model LibraryBook {
-  id              String     @id @default(cuid())
+  id              String      @id @default(cuid())
   title           String
   author          String
-  isbn            String     @unique
+  isbn            String      @unique
   publisher       String?
   edition         String?
   subject         String?
-  totalCopies     Int        @default(1)
-  availableCopies Int        @default(1)
-  isActive        Boolean    @default(true)
-  createdAt       DateTime   @default(now())
+  totalCopies     Int         @default(1)
+  availableCopies Int         @default(1)
+  isActive        Boolean     @default(true)
+  createdAt       DateTime    @default(now())
   issues          BookIssue[]
 }
 
 model LibraryCard {
-  id        String     @id @default(cuid())
-  studentId String     @unique
-  student   Student    @relation(fields: [studentId], references: [id])
-  cardNumber String    @unique
-  isActive  Boolean    @default(true)
-  createdAt DateTime   @default(now())
-  issues    BookIssue[]
+  id         String      @id @default(cuid())
+  studentId  String      @unique
+  student    Student     @relation(fields: [studentId], references: [id])
+  cardNumber String      @unique
+  isActive   Boolean     @default(true)
+  createdAt  DateTime    @default(now())
+  issues     BookIssue[]
 }
 
 model BookIssue {
@@ -1238,4 +1246,154 @@ model BookIssue {
 
   @@index([cardId])
   @@index([bookId])
+}
+
+// ═══════════════════════════════════════════════════════
+// NEW HR & ADMIN MODELS
+// ═══════════════════════════════════════════════════════
+
+model FacultyAttendance {
+  id        String           @id @default(cuid())
+  facultyId String
+  faculty   Faculty          @relation(fields: [facultyId], references: [id])
+  date      DateTime         @db.Date
+  status    AttendanceStatus @default(PRESENT)
+  remark    String?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@unique([facultyId, date])
+  @@index([date])
+}
+
+enum EmployeeType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+}
+
+enum PayslipStatus {
+  DRAFT
+  GENERATED
+  PAID
+}
+
+model EmployeeProfile {
+  id            String       @id @default(cuid())
+  facultyId     String       @unique
+  faculty       Faculty      @relation(fields: [facultyId], references: [id])
+  employeeType  EmployeeType @default(FULL_TIME)
+  joiningDate   DateTime
+  bankName      String?
+  accountNumber String?
+  ifscCode      String?
+  panNumber     String?
+  uanNumber     String?
+  basicSalary   Float        @default(0)
+  isActive      Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model SalaryStructure {
+  id              String   @id @default(cuid())
+  facultyId       String   @unique
+  faculty         Faculty  @relation(fields: [facultyId], references: [id])
+  basicPay        Float    @default(0)
+  hra             Float    @default(0)
+  da              Float    @default(0)
+  allowances      Float    @default(0)
+  deductions      Float    @default(0)
+  providentFund   Float    @default(0)
+  professionalTax Float    @default(0)
+  netSalary       Float    @default(0)
+  updatedAt       DateTime @updatedAt
+}
+
+model LeaveBalance {
+  id           String   @id @default(cuid())
+  facultyId    String   @unique
+  faculty      Faculty  @relation(fields: [facultyId], references: [id])
+  casualLeaves Int      @default(12)
+  sickLeaves   Int      @default(12)
+  earnedLeaves Int      @default(0)
+  year         Int
+  updatedAt    DateTime @updatedAt
+}
+
+model LeaveApplication {
+  id           String      @id @default(cuid())
+  facultyId    String
+  faculty      Faculty     @relation(fields: [facultyId], references: [id])
+  leaveType    String // CASUAL, SICK, EARNED
+  startDate    DateTime    @db.Date
+  endDate      DateTime    @db.Date
+  days         Float
+  reason       String
+  status       LeaveStatus @default(LEAVE_PENDING)
+  approvedById String?
+  remarks      String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([facultyId])
+  @@index([status])
+}
+
+model Payslip {
+  id              String        @id @default(cuid())
+  facultyId       String
+  faculty         Faculty       @relation(fields: [facultyId], references: [id])
+  month           Int
+  year            Int
+  basicPay        Float
+  hra             Float
+  da              Float
+  allowances      Float
+  grossSalary     Float
+  providentFund   Float
+  professionalTax Float
+  otherDeductions Float
+  totalDeductions Float
+  netSalary       Float
+  status          PayslipStatus @default(DRAFT)
+  paidAt          DateTime?
+  pdfPath         String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@unique([facultyId, month, year])
+}
+
+// ═══════════════════════════════════════════════════════
+// NEW TRANSPORT MODELS
+// ═══════════════════════════════════════════════════════
+
+model TransportRouteNew {
+  id          String   @id @default(cuid())
+  routeName   String
+  routeNumber String   @unique
+  stops       Json
+  timings     Json
+  monthlyFee  Float
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  passes TransportPassNew[]
+}
+
+model TransportPassNew {
+  id           String            @id @default(cuid())
+  studentId    String
+  student      Student           @relation(fields: [studentId], references: [id])
+  routeId      String
+  route        TransportRouteNew @relation(fields: [routeId], references: [id])
+  boardingStop String
+  validFrom    DateTime          @db.Date
+  validUntil   DateTime          @db.Date
+  isActive     Boolean           @default(true)
+  createdAt    DateTime          @default(now())
+
+  @@index([studentId])
+  @@index([routeId])
 }

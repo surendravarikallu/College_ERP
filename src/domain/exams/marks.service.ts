@@ -210,19 +210,44 @@ export class MarksService {
       select: { id: true, name: true, code: true },
     });
 
-    return prisma.newHallTicket.upsert({
+    // Check attendance threshold (75%)
+    const attendance = await prisma.newAttendance.findMany({ where: { studentId } });
+    const totalAtt = attendance.length;
+    const presentAtt = attendance.filter(a => a.status === 'PRESENT' || a.status === 'OD').length;
+    const attendancePct = totalAtt > 0 ? (presentAtt / totalAtt) * 100 : 0;
+    
+    // Check pending fees
+    const dues = await prisma.feeInvoice.aggregate({
+      where: { studentId, status: 'PENDING' },
+      _sum: { finalAmount: true }
+    });
+    const hasPendingFees = (dues._sum.finalAmount || 0) > 0;
+
+    let isEligible = true;
+    let ineligibleReason = null;
+    if (attendancePct > 0 && attendancePct < 75) {
+      isEligible = false;
+      ineligibleReason = 'Attendance below 75%';
+    } else if (hasPendingFees) {
+      isEligible = false;
+      ineligibleReason = 'Pending fee dues';
+    }
+
+    const result = await prisma.newHallTicket.upsert({
       where: { studentId_examSessionId: { studentId, examSessionId } },
       create: {
         studentId,
         examSessionId,
         eligibleSubjects: subjects,
-        isEligible: true,
+        isEligible,
       },
       update: {
         eligibleSubjects: subjects,
-        isEligible: true,
+        isEligible,
       },
     });
+
+    return { ...result, ineligibleReason };
   }
 
   /**
@@ -271,5 +296,26 @@ export class MarksService {
     }
 
     return detained;
+  }
+  static async generateHallTicketPDF(studentId: string, examSessionId: string): Promise<string> {
+    const ticket = await prisma.newHallTicket.findUnique({
+      where: { studentId_examSessionId: { studentId, examSessionId } },
+      include: {
+        student: { include: { department: true } },
+        examSession: true
+      }
+    });
+
+    if (!ticket) throw new APIError('NOT_FOUND', 'Hall ticket not found.');
+    if (!ticket.isEligible) throw new APIError('FORBIDDEN', `Hall ticket not eligible: ${ticket.ineligibleReason}`);
+
+    const pdfPath = `/uploads/halltickets/${studentId}_${examSessionId}.pdf`;
+    
+    await prisma.newHallTicket.update({
+      where: { id: ticket.id },
+      data: { pdfPath }
+    });
+
+    return pdfPath;
   }
 }
