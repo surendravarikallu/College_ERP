@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Users, BookOpen, ClipboardList, FileText, Wallet,
   Building2, Library, Bus, Package, BarChart3, Settings, Clock,
   GraduationCap, Receipt, CalendarDays, PenTool, ScrollText, Upload,
-  UserCog, FileBarChart, Stamp, ListChecks, Bot
+  UserCog, FileBarChart, Stamp, ListChecks, Bot, DollarSign, Bell, Shield
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { io } from 'socket.io-client';
@@ -22,23 +22,25 @@ const menuConfig: Record<string, { label: string; path: string; icon: React.Reac
     { label: 'Academics', path: '/admin/academics', icon: <BookOpen className="w-4 h-4" /> },
     { label: 'Attendance', path: '/admin/attendance', icon: <ClipboardList className="w-4 h-4" /> },
     { label: 'Exams', path: '/admin/exams', icon: <FileText className="w-4 h-4" /> },
+    { label: 'HR & Payroll', path: '/admin/hr', icon: <DollarSign className="w-4 h-4" /> },
     { label: 'Finance', path: '/admin/finance', icon: <Wallet className="w-4 h-4" /> },
     { label: 'Hostel', path: '/admin/hostel', icon: <Building2 className="w-4 h-4" /> },
     { label: 'Library', path: '/admin/library', icon: <Library className="w-4 h-4" /> },
     { label: 'Transport', path: '/admin/transport', icon: <Bus className="w-4 h-4" /> },
     { label: 'Inventory', path: '/admin/inventory', icon: <Package className="w-4 h-4" /> },
     { label: 'Reports', path: '/admin/reports', icon: <BarChart3 className="w-4 h-4" /> },
-    { label: 'Settings', path: '/admin/settings', icon: <Settings className="w-4 h-4" /> },
-    // ── Exam Cell ──
+    { label: 'Audit Logs', path: '/admin/audit-logs', icon: <Shield className="w-4 h-4" /> },
     { label: 'Exam Cell', path: '/admin/examcell', icon: <GraduationCap className="w-4 h-4" /> },
+    { label: 'Settings', path: '/admin/settings', icon: <Settings className="w-4 h-4" /> },
   ],
   STUDENT: [
     { label: 'Dashboard', path: '/student', icon: <LayoutDashboard className="w-4 h-4" /> },
     { label: 'Attendance', path: '/student/attendance', icon: <ClipboardList className="w-4 h-4" /> },
     { label: 'Results', path: '/student/results', icon: <GraduationCap className="w-4 h-4" /> },
     { label: 'Fees', path: '/student/fees', icon: <Receipt className="w-4 h-4" /> },
-    { label: 'Timetable', path: '/student/timetable', icon: <CalendarDays className="w-4 h-4" /> },
     { label: 'Library', path: '/student/library', icon: <Library className="w-4 h-4" /> },
+    { label: 'Timetable', path: '/student/timetable', icon: <CalendarDays className="w-4 h-4" /> },
+    { label: 'Notifications', path: '/student/notifications', icon: <Bell className="w-4 h-4" /> },
   ],
   FACULTY: [
     { label: 'Dashboard', path: '/faculty', icon: <LayoutDashboard className="w-4 h-4" /> },
@@ -63,8 +65,10 @@ const pageTitles: Record<string, string> = {
   // Student / Faculty
   '/student': 'Student Dashboard', '/student/attendance': 'My Attendance', '/student/results': 'Exam Results',
   '/student/fees': 'Fee Payment', '/student/timetable': 'My Timetable', '/student/library': 'Library',
+  '/student/notifications': 'Notifications',
   '/faculty': 'Faculty Dashboard', '/faculty/attendance': 'Mark Attendance', '/faculty/marks': 'Marks Entry',
   '/faculty/timetable': 'My Schedule',
+  '/admin/hr': 'HR & Payroll', '/admin/audit-logs': 'Audit Logs',
 };
 
 const AppShell: React.FC<AppShellProps> = ({ role }) => {

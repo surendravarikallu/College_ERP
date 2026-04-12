@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lock, Mail, GraduationCap, ArrowRight } from 'lucide-react';
 import { apiClient } from '../../api/client';
+import { useAuth } from '../../hooks/useAuth';
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [form, setForm] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -22,20 +24,19 @@ const LoginPage = () => {
 
       const payload = response.data;
 
-      // Store tokens
-      localStorage.setItem('erp_access_token', payload.accessToken);
-      localStorage.setItem('erp_refresh_token', payload.refreshToken);
+      if (payload.success) {
+        // Use useAuth hook to persist tokens + user in localStorage & state
+        login(payload.accessToken, payload.refreshToken, payload.user);
 
-      // Route based on role
-      const role = payload.user.role.toLowerCase().replace('_', '');
-      if (role === 'superadmin' || role === 'admin') {
-        navigate('/admin');
-      } else if (role === 'faculty' || role === 'hod' || role === 'principal') {
-        navigate('/faculty');
-      } else if (role === 'examcell') {
-        navigate('/admin/examcell');
-      } else {
-        navigate('/student');
+        // Route based on role
+        const routes: Record<string, string> = {
+          ADMIN: '/admin', SUPER_ADMIN: '/admin', SUPERADMIN: '/admin',
+          FACULTY: '/faculty', HOD: '/faculty', PRINCIPAL: '/faculty',
+          STUDENT: '/student',
+          EXAM_CELL: '/admin/examcell',
+          ACCOUNTS: '/admin',
+        };
+        navigate(routes[payload.user.role] || '/');
       }
     } catch (err: any) {
       setError(err.response?.data?.error || 'Authentication failed. Please try again.');

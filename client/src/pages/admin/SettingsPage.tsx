@@ -1,77 +1,125 @@
-import React, { useState } from 'react';
-import { Layout } from '../../components/layout/Layout';
+import React, { useState, useEffect } from 'react';
+import { apiClient } from '../../api/client';
+import { useToast } from '../../hooks/use-toast';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
+import { Save, Settings } from 'lucide-react';
 
 export const SettingsPage = () => {
+  const { toast } = useToast();
   const [config, setConfig] = useState({
-    institutionName: 'KITS Akshar Institute of Technology',
+    institutionName: 'Kits Akshar Institute of Technology',
     academicYear: '2024-2025',
     currentSemester: 'ODD',
     emailNotifications: true,
-    smsAlerts: false
+    smsAlerts: false,
+    autoLockMarks: true,
+    attendanceThreshold: '75',
   });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  const handleChange = (e: any) => {
-    const { name, value, type, checked } = e.target;
-    setConfig({ ...config, [name]: type === 'checkbox' ? checked : value });
-  };
+  useEffect(() => {
+    apiClient.get('/admin/settings')
+      .then(res => { if (res.data.data) setConfig(c => ({ ...c, ...res.data.data })); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Assuming API push logically works
-    alert('Settings saved successfully!');
+    setSaving(true);
+    try {
+      await apiClient.put('/admin/settings', config);
+      toast({ title: 'Settings Saved', description: 'Configuration updated successfully' });
+    } catch {
+      toast({ title: 'Save Failed', description: 'Could not save settings', variant: 'destructive' });
+    }
+    setSaving(false);
   };
+
+  const chk = (k: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setConfig(c => ({ ...c, [k]: e.target.checked }));
+
+  const val = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+    setConfig(c => ({ ...c, [k]: e.target.value }));
+
+  if (loading) return (
+    <div className="flex justify-center py-20">
+      <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"/>
+    </div>
+  );
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="max-w-2xl space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">System Settings</h1>
-        <p className="mt-1 text-sm text-gray-500">Configure global institution parameters</p>
+        <h1 className="text-2xl font-bold">System Settings</h1>
+        <p className="text-sm text-muted-foreground mt-1">Configure global institution parameters</p>
       </div>
-
-      <div className="mt-8 bg-white border border-gray-200 rounded-lg shadow-sm">
-        <form onSubmit={handleSave} className="p-8 space-y-6">
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium border-b pb-2">General Info</h3>
+      <form onSubmit={handleSave} className="space-y-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Settings className="w-4 h-4"/> Institution Details
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {[
+              { label: 'Institution Name', key: 'institutionName' },
+              { label: 'Academic Year', key: 'academicYear', placeholder: '2024-2025' },
+              { label: 'Attendance Threshold (%)', key: 'attendanceThreshold', type: 'number' },
+            ].map(f => (
+              <div key={f.key}>
+                <label className="block text-sm font-medium mb-1.5">{f.label}</label>
+                <input
+                  type={f.type || 'text'}
+                  value={(config as any)[f.key]}
+                  placeholder={f.placeholder}
+                  onChange={val(f.key)}
+                  className="w-full border rounded-lg px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            ))}
             <div>
-              <label className="block text-sm font-medium text-gray-700">Institution Name</label>
-              <input type="text" name="institutionName" value={config.institutionName} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+              <label className="block text-sm font-medium mb-1.5">Current Semester</label>
+              <select value={config.currentSemester} onChange={val('currentSemester')}
+                className="w-full border rounded-lg px-3 py-2 text-sm bg-background">
+                <option value="ODD">ODD Semester</option>
+                <option value="EVEN">EVEN Semester</option>
+              </select>
             </div>
-          </div>
+          </CardContent>
+        </Card>
 
-          <div className="space-y-4 pt-4">
-            <h3 className="text-lg font-medium border-b pb-2">Academic Settings</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Current Academic Year</label>
-                <input type="text" name="academicYear" value={config.academicYear} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+        <Card>
+          <CardHeader><CardTitle className="text-base">System Behaviour</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            {[
+              { label: 'Email Notifications', key: 'emailNotifications', desc: 'Send alerts for attendance shortage, fee dues, results' },
+              { label: 'SMS Alerts', key: 'smsAlerts', desc: 'SMS notifications for critical alerts' },
+              { label: 'Auto-lock Marks Entry', key: 'autoLockMarks', desc: 'Lock exam session marks after deadline automatically' },
+            ].map(f => (
+              <div key={f.key} className="flex items-center justify-between py-2">
+                <div>
+                  <p className="text-sm font-medium">{f.label}</p>
+                  <p className="text-xs text-muted-foreground">{f.desc}</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={!!(config as any)[f.key]}
+                  onChange={chk(f.key)}
+                  className="w-4 h-4 rounded accent-indigo-600"
+                />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Current Semester Term</label>
-                <select name="currentSemester" value={config.currentSemester} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                  <option value="ODD">ODD</option>
-                  <option value="EVEN">EVEN</option>
-                </select>
-              </div>
-            </div>
-          </div>
+            ))}
+          </CardContent>
+        </Card>
 
-          <div className="space-y-4 pt-4">
-            <h3 className="text-lg font-medium border-b pb-2">Notifications</h3>
-            <div className="flex items-center">
-              <input type="checkbox" name="emailNotifications" checked={config.emailNotifications} onChange={handleChange} className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" />
-              <label className="ml-2 block text-sm text-gray-900">Enable Email Notifications</label>
-            </div>
-            <div className="flex items-center">
-              <input type="checkbox" name="smsAlerts" checked={config.smsAlerts} onChange={handleChange} className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" />
-              <label className="ml-2 block text-sm text-gray-900">Enable SMS Alerts</label>
-            </div>
-          </div>
-
-          <div className="pt-6">
-            <button type="submit" className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">Save Configuration</button>
-          </div>
-        </form>
-      </div>
+        <Button type="submit" className="w-full" disabled={saving}>
+          <Save className="w-4 h-4 mr-2"/>
+          {saving ? 'Saving...' : 'Save Settings'}
+        </Button>
+      </form>
     </div>
   );
 };

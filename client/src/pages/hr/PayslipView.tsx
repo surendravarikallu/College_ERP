@@ -1,121 +1,166 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Layout } from '../../components/layout/Layout';
-import { api } from '../../api/client';
-import { toast } from 'react-hot-toast';
+import { apiClient } from '../../api/client';
+import { useToast } from '../../hooks/use-toast';
+import { Button } from '../../components/ui/button';
+import { Badge } from '../../components/ui/badge';
+import { Printer, Download, ArrowLeft, Loader2 } from 'lucide-react';
+
+const MONTHS = ['January','February','March','April','May','June',
+  'July','August','September','October','November','December'];
+
+const fmt = (n: number) =>
+  n?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export const PayslipView = () => {
-  const { payslipId } = useParams();
+  const { payslipId } = useParams<{ payslipId: string }>();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [payslip, setPayslip] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Attempting to load mock data or real data depending on the service availability
-    setLoading(true);
-    // Since we don't have a single GET entry for payslip without facultyId, mock for demonstration
-    setPayslip({
-      id: payslipId,
-      month: 10,
-      year: 2024,
-      basicPay: 45000,
-      hra: 15000,
-      da: 10000,
-      allowances: 5000,
-      grossSalary: 75000,
-      providentFund: 4800,
-      professionalTax: 200,
-      otherDeductions: 1000,
-      totalDeductions: 6000,
-      netSalary: 69000,
-      facultyName: 'Dr. John Example',
-      employeeId: 'EMP-1029',
-      department: 'Computer Science',
-      status: 'GENERATED'
-    });
-    setLoading(false);
+    if (!payslipId) return;
+    apiClient.get(`/hr/payroll/${payslipId}`)
+      .then(res => setPayslip(res.data.data))
+      .catch(() => toast({
+        title: 'Error', description: 'Payslip not found', variant: 'destructive'
+      }))
+      .finally(() => setLoading(false));
   }, [payslipId]);
 
   const handleDownload = async () => {
     try {
-      const res = await api.get(`/hr/payroll/${payslipId}/pdf`);
-      toast.success(res.data.pdfPath ? `PDF generated at ${res.data.pdfPath}` : 'PDF ready');
+      const res = await apiClient.get(`/hr/payroll/${payslipId}/pdf`);
+      toast({
+        title: 'PDF Generated',
+        description: res.data.pdfPath ? `Saved: ${res.data.pdfPath}` : 'PDF created'
+      });
     } catch {
-      toast.error('Failed to generate PDF');
+      toast({ title: 'Error', description: 'PDF generation failed', variant: 'destructive' });
     }
   };
 
-  if (loading) return <Layout><div className="p-8">Loading...</div></Layout>;
-  if (!payslip) return <Layout><div className="p-8 text-red-500">Payslip not found</div></Layout>;
+  if (loading) return (
+    <div className="flex justify-center py-20">
+      <Loader2 className="w-8 h-8 animate-spin text-indigo-500"/>
+    </div>
+  );
+
+  if (!payslip) return (
+    <div className="p-8 text-red-500">Payslip not found</div>
+  );
+
+  const { faculty } = payslip;
+  const INSTITUTION = 'Kits Akshar Institute of Technology';
 
   return (
-    <Layout>
-      <div className="p-6 max-w-4xl mx-auto space-y-6">
-        <div className="flex justify-between items-center mb-6">
-          <button onClick={() => navigate(-1)} className="text-gray-500 hover:text-gray-900 border px-3 py-1 rounded">Back</button>
-          <div className="space-x-3">
-            <button onClick={() => window.print()} className="px-4 py-2 border rounded shadow-sm text-gray-700 bg-white hover:bg-gray-50">Print</button>
-            <button onClick={handleDownload} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Download PDF</button>
-          </div>
-        </div>
-
-        {/* Printable Area */}
-        <div className="bg-white p-10 border rounded-lg shadow-sm print:shadow-none print:border-none">
-          <div className="text-center border-b pb-6 mb-6">
-            <h1 className="text-2xl font-bold uppercase">KITS Akshar Institute of Technology</h1>
-            <p className="text-gray-600 mt-1">Payslip for Month: {payslip.month}/{payslip.year}</p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-8 mb-8 text-sm">
-            <div>
-              <p><span className="font-semibold text-gray-600 w-32 inline-block">Employee Name:</span> {payslip.facultyName}</p>
-              <p><span className="font-semibold text-gray-600 w-32 inline-block">Employee ID:</span> {payslip.employeeId}</p>
-              <p><span className="font-semibold text-gray-600 w-32 inline-block">Department:</span> {payslip.department}</p>
-            </div>
-            <div>
-              <p><span className="font-semibold text-gray-600 w-32 inline-block">Status:</span> {payslip.status}</p>
-              <p><span className="font-semibold text-gray-600 w-32 inline-block">Bank A/C:</span> XXXXXX1234</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-8 text-sm">
-            <div>
-              <h3 className="font-bold border-b pb-2 mb-3 bg-gray-50 px-2 py-1">Earnings</h3>
-              <div className="space-y-2 px-2">
-                <div className="flex justify-between"><span className="text-gray-600">Basic Pay</span><span>₹{payslip.basicPay}</span></div>
-                <div className="flex justify-between"><span className="text-gray-600">HRA</span><span>₹{payslip.hra}</span></div>
-                <div className="flex justify-between"><span className="text-gray-600">DA</span><span>₹{payslip.da}</span></div>
-                <div className="flex justify-between"><span className="text-gray-600">Allowances</span><span>₹{payslip.allowances}</span></div>
-                <div className="flex justify-between font-bold pt-2 border-t mt-2">
-                  <span>Gross Salary</span><span>₹{payslip.grossSalary}</span>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <h3 className="font-bold border-b pb-2 mb-3 bg-gray-50 px-2 py-1">Deductions</h3>
-              <div className="space-y-2 px-2">
-                <div className="flex justify-between"><span className="text-gray-600">Provident Fund</span><span>₹{payslip.providentFund}</span></div>
-                <div className="flex justify-between"><span className="text-gray-600">Professional Tax</span><span>₹{payslip.professionalTax}</span></div>
-                <div className="flex justify-between"><span className="text-gray-600">Other Deductions</span><span>₹{payslip.otherDeductions}</span></div>
-                <div className="flex justify-between"><span className="text-gray-600">&nbsp;</span><span>&nbsp;</span></div>
-                <div className="flex justify-between font-bold pt-2 border-t mt-2">
-                  <span>Total Deductions</span><span className="text-red-600">₹{payslip.totalDeductions}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-8 pt-6 border-t font-bold text-lg flex justify-between px-2 bg-green-50 p-4 rounded text-green-800">
-            <span>Net Salary Payable</span>
-            <span>₹{payslip.netSalary}</span>
-          </div>
-          
-          <p className="text-xs text-center text-gray-400 mt-12 pb-4">
-            This is a computer generated document and does not require a physical signature.
-          </p>
+    <div className="max-w-3xl mx-auto space-y-4">
+      {/* Controls */}
+      <div className="flex items-center justify-between no-print">
+        <Button variant="ghost" onClick={() => navigate(-1)}>
+          <ArrowLeft className="w-4 h-4 mr-2"/> Back
+        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => window.print()}>
+            <Printer className="w-4 h-4 mr-2"/> Print
+          </Button>
+          <Button onClick={handleDownload}>
+            <Download className="w-4 h-4 mr-2"/> Download PDF
+          </Button>
         </div>
       </div>
-    </Layout>
+
+      {/* Payslip Document */}
+      <div className="bg-white border rounded-xl p-8 text-gray-900 print:border-0" id="payslip-doc">
+        {/* Header */}
+        <div className="text-center border-b-2 border-gray-800 pb-4 mb-6">
+          <h1 className="text-xl font-bold uppercase tracking-wide">{INSTITUTION}</h1>
+          <p className="text-sm font-medium mt-1">Pay Slip</p>
+          <p className="text-sm text-gray-600">
+            For the Month of {MONTHS[payslip.month - 1]} {payslip.year}
+          </p>
+        </div>
+
+        {/* Employee Details */}
+        <div className="grid grid-cols-2 gap-x-8 gap-y-2 mb-6 text-sm">
+          {[
+            ['Employee Name', faculty?.name],
+            ['Employee ID', faculty?.employeeId],
+            ['Department', faculty?.department?.name],
+            ['Designation', faculty?.designation || '—'],
+            ['Pay Period', `${MONTHS[payslip.month - 1]} ${payslip.year}`],
+            ['Status', null],
+          ].map(([label, value], i) => (
+            <div key={i} className="flex gap-2">
+              <span className="text-gray-500 w-36 flex-shrink-0">{label as string}:</span>
+              {label === 'Status'
+                ? <Badge variant={payslip.status === 'PAID' ? 'default' : 'secondary'}>{payslip.status}</Badge>
+                : <span className="font-medium">{value as string}</span>
+              }
+            </div>
+          ))}
+          {faculty?.employeeProfile?.bankName && (
+            <div className="flex gap-2 col-span-2">
+              <span className="text-gray-500 w-36">Bank A/C:</span>
+              <span className="font-medium">
+                {faculty.employeeProfile.accountNumber} ({faculty.employeeProfile.bankName})
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Earnings & Deductions */}
+        <div className="grid grid-cols-2 gap-6 mb-6">
+          <div>
+            <h3 className="font-semibold text-xs uppercase tracking-widest border-b pb-2 mb-3">Earnings</h3>
+            {[
+              ['Basic Pay', payslip.basicPay],
+              ['HRA (House Rent)', payslip.hra],
+              ['DA (Dearness)', payslip.da],
+              ['Other Allowances', payslip.allowances],
+            ].map(([label, amount]) => (
+              <div key={label as string} className="flex justify-between text-sm py-1.5">
+                <span className="text-gray-600">{label as string}</span>
+                <span>₹ {fmt(amount as number)}</span>
+              </div>
+            ))}
+            <div className="flex justify-between text-sm py-2 border-t mt-1 font-semibold">
+              <span>Gross Salary</span>
+              <span>₹ {fmt(payslip.grossSalary)}</span>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="font-semibold text-xs uppercase tracking-widest border-b pb-2 mb-3">Deductions</h3>
+            {[
+              ['Provident Fund', payslip.providentFund],
+              ['Professional Tax', payslip.professionalTax],
+              ['Other Deductions', payslip.otherDeductions],
+            ].map(([label, amount]) => (
+              <div key={label as string} className="flex justify-between text-sm py-1.5">
+                <span className="text-gray-600">{label as string}</span>
+                <span>₹ {fmt(amount as number)}</span>
+              </div>
+            ))}
+            <div className="flex justify-between text-sm py-2 border-t mt-1 font-semibold text-red-600">
+              <span>Total Deductions</span>
+              <span>₹ {fmt(payslip.totalDeductions)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Net Salary */}
+        <div className="bg-emerald-50 rounded-lg p-4 flex justify-between items-center border border-emerald-200">
+          <span className="text-lg font-bold text-emerald-900">NET SALARY PAYABLE</span>
+          <span className="text-2xl font-bold text-emerald-700">₹ {fmt(payslip.netSalary)}</span>
+        </div>
+
+        <p className="text-center text-xs text-gray-400 mt-6 pb-2">
+          This is a computer-generated payslip and does not require a physical signature.
+          Generated on {new Date().toLocaleDateString('en-IN')}.
+        </p>
+      </div>
+    </div>
   );
 };

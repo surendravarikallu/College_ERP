@@ -1,53 +1,91 @@
 import React from 'react';
-import { Layout } from '../../components/layout/Layout';
-import { Download, FileText, BarChart2, Users } from 'lucide-react';
+import { Download, FileText, BarChart2, Users, DollarSign, GraduationCap } from 'lucide-react';
+import { apiClient } from '../../api/client';
+import { useToast } from '../../hooks/use-toast';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
 
 export const AdminReportsPage = () => {
-  const handleExport = (type: string) => {
-    // Integration point for downloading reports (CSV/PDF)
-    // api.get(`/reports/export?type=${type}`)
+  const { toast } = useToast();
+
+  const handleExport = async (type: string, label: string) => {
+    try {
+      toast({ title: `Generating ${label}...`, description: 'Please wait' });
+      const response = await apiClient.get(`/analytics/export/${type}`, {
+        responseType: 'blob'
+      });
+      const url = URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${type}-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast({ title: `${label} downloaded` });
+    } catch {
+      toast({
+        title: 'Export Failed',
+        description: 'Could not generate report. Check server logs.',
+        variant: 'destructive'
+      });
+    }
   };
 
+  const reports = [
+    {
+      type: 'students', label: 'Student List', icon: <Users className="w-8 h-8"/>,
+      desc: 'All active students with roll number, department, semester, email and phone',
+      color: 'bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400',
+    },
+    {
+      type: 'performance', label: 'Performance Report', icon: <BarChart2 className="w-8 h-8"/>,
+      desc: 'Subject-wise grade records with SGPA/CGPA for every student',
+      color: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400',
+    },
+    {
+      type: 'finance', label: 'Fee Dues', icon: <DollarSign className="w-8 h-8"/>,
+      desc: 'All pending fee invoices with amounts and due dates',
+      color: 'bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400',
+    },
+    {
+      type: 'faculty-payroll', label: 'Faculty Payroll', icon: <GraduationCap className="w-8 h-8"/>,
+      desc: 'Monthly payslip summary for all faculty members',
+      color: 'bg-purple-50 text-purple-600 dark:bg-purple-950/30 dark:text-purple-400',
+    },
+    {
+      type: 'marks-sheet', label: 'Marks Sheet', icon: <FileText className="w-8 h-8"/>,
+      desc: 'Exam marks for all students (mid-exams and end-semester)',
+      color: 'bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400',
+    },
+  ];
+
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Reports & Analytics</h1>
-        <p className="mt-1 text-sm text-gray-500">Generate and export institutional data reports</p>
+        <h1 className="text-2xl font-bold">Reports & Analytics</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Download institutional data reports
+        </p>
       </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow border border-gray-100 flex flex-col items-center text-center">
-          <div className="p-4 bg-blue-50 text-blue-600 rounded-full mb-4">
-            <Users className="w-8 h-8" />
-          </div>
-          <h3 className="text-lg font-semibold">Student Demographics</h3>
-          <p className="text-sm text-gray-500 mt-2 mb-4">Export detailed student data including department, batch, and contact details.</p>
-          <button onClick={() => handleExport('students')} className="mt-auto px-4 py-2 bg-gray-100 hover:bg-gray-200 text-sm font-medium rounded flex items-center justify-center gap-2 w-full">
-            <Download className="w-4 h-4" /> Export CSV
-          </button>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow border border-gray-100 flex flex-col items-center text-center">
-          <div className="p-4 bg-emerald-50 text-emerald-600 rounded-full mb-4">
-            <FileText className="w-8 h-8" />
-          </div>
-          <h3 className="text-lg font-semibold">Academic Performance</h3>
-          <p className="text-sm text-gray-500 mt-2 mb-4">Download exam session results, grades, and pass percentages.</p>
-          <button onClick={() => handleExport('performance')} className="mt-auto px-4 py-2 bg-gray-100 hover:bg-gray-200 text-sm font-medium rounded flex items-center justify-center gap-2 w-full">
-            <Download className="w-4 h-4" /> Export Excel
-          </button>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow border border-gray-100 flex flex-col items-center text-center">
-          <div className="p-4 bg-amber-50 text-amber-600 rounded-full mb-4">
-            <BarChart2 className="w-8 h-8" />
-          </div>
-          <h3 className="text-lg font-semibold">Financial Summary</h3>
-          <p className="text-sm text-gray-500 mt-2 mb-4">Consolidated report of fee collections, dues, and payroll expenses.</p>
-          <button onClick={() => handleExport('finance')} className="mt-auto px-4 py-2 bg-gray-100 hover:bg-gray-200 text-sm font-medium rounded flex items-center justify-center gap-2 w-full">
-            <Download className="w-4 h-4" /> Export PDF
-          </button>
-        </div>
+        {reports.map(r => (
+          <Card key={r.type} className="flex flex-col">
+            <CardHeader>
+              <div className={`w-16 h-16 rounded-xl flex items-center justify-center mb-3 ${r.color}`}>
+                {r.icon}
+              </div>
+              <CardTitle className="text-base">{r.label}</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col flex-1">
+              <p className="text-sm text-muted-foreground flex-1 mb-4">{r.desc}</p>
+              <Button variant="outline" className="w-full"
+                onClick={() => handleExport(r.type, r.label)}>
+                <Download className="w-4 h-4 mr-2"/> Export
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     </div>
   );

@@ -74,4 +74,13 @@ libraryRouter.get('/stats', authenticateToken,
   }
 );
 
+libraryRouter.get('/my-books', authenticateToken,
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const data = await LibraryService.getMyBooks(req.user!.id);
+      res.json({ success: true, data });
+    } catch (err) { next(err); }
+  }
+);
+
 export default libraryRouter;

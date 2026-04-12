@@ -54,4 +54,16 @@ analyticsRouter.get('/exam-performance', authenticateToken, requireRole('ADMIN',
   }
 );
 
+// GET /api/v1/analytics/export/:type
+analyticsRouter.get('/export/:type', authenticateToken, requireRole('ADMIN', 'SUPER_ADMIN', 'SUPERADMIN'),
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const data = await AnalyticsService.exportData(req.params.type);
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename=${req.params.type}-report.csv`);
+      res.send(data);
+    } catch (err) { next(err); }
+  }
+);
+
 export default analyticsRouter;

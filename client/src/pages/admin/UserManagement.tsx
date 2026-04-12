@@ -18,7 +18,7 @@ const UserManagement = () => {
       const params = new URLSearchParams({ page: String(page), limit: '15' });
       if (filters.role) params.set('role', filters.role);
       if (filters.search) params.set('search', filters.search);
-      const res = await apiClient.get(`/identity/users?${params}`);
+      const res = await apiClient.get(`/admin/users?${params}`);
       setUsers(res.data.data.users);
       setPagination(res.data.data.pagination);
     } catch (e) { console.error(e); }
@@ -27,7 +27,7 @@ const UserManagement = () => {
 
   const fetchStats = async () => {
     try {
-      const res = await apiClient.get('/identity/users/stats');
+      const res = await apiClient.get('/admin/users/stats');
       setStats(res.data.data);
     } catch (e) { console.error(e); }
   };
@@ -38,7 +38,7 @@ const UserManagement = () => {
     e.preventDefault();
     setFormError('');
     try {
-      await apiClient.post('/identity/users', form);
+      await apiClient.post('/admin/users', form);
       setShowModal(false);
       setForm({ email: '', password: '', role: 'STUDENT', firstName: '', lastName: '', enrollmentNo: '', batchId: '', departmentId: '' });
       fetchUsers();
@@ -48,9 +48,9 @@ const UserManagement = () => {
     }
   };
 
-  const toggleActive = async (userId: string) => {
+  const toggleActive = async (userId: string, currentlyActive: boolean) => {
     try {
-      await apiClient.put(`/identity/users/${userId}/toggle-active`);
+      await apiClient.patch(`/admin/users/${userId}/status`, { isActive: !currentlyActive });
       fetchUsers(pagination.page);
     } catch (e) { console.error(e); }
   };
@@ -59,7 +59,7 @@ const UserManagement = () => {
     const newPass = prompt('Enter new password:');
     if (!newPass) return;
     try {
-      await apiClient.put(`/identity/users/${userId}/reset-password`, { newPassword: newPass });
+      await apiClient.post(`/admin/users/${userId}/reset-password`, { newPassword: newPass });
       alert('Password reset successfully.');
     } catch (e: any) {
       alert(e.response?.data?.error || 'Failed');
@@ -159,7 +159,7 @@ const UserManagement = () => {
                     <td className="px-5 py-3.5 text-sm text-slate-500">{new Date(u.createdAt).toLocaleDateString()}</td>
                     <td className="px-5 py-3.5">
                       <div className="flex gap-2">
-                        <button onClick={() => toggleActive(u.id)} title="Toggle Active" className="p-1.5 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-white transition-colors">
+                        <button onClick={() => toggleActive(u.id, u.isActive)} title="Toggle Active" className="p-1.5 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-white transition-colors">
                           {u.isActive ? <ToggleRight className="w-4 h-4 text-emerald-400" /> : <ToggleLeft className="w-4 h-4 text-red-400" />}
                         </button>
                         <button onClick={() => resetPassword(u.id)} title="Reset Password" className="p-1.5 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-white transition-colors">

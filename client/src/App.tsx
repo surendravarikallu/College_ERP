@@ -14,7 +14,6 @@ import HostelManagement from './pages/admin/HostelManagement';
 import LibraryManagement from './pages/admin/LibraryManagement';
 import TransportManagement from './pages/admin/TransportManagement';
 import InventoryManagement from './pages/admin/InventoryManagement';
-import InventoryManagement from './pages/admin/InventoryManagement';
 import FinanceManagement from './pages/admin/FinanceManagement';
 
 // New Pages Added in SP-05
@@ -23,12 +22,16 @@ import { AdminReportsPage } from './pages/admin/AdminReportsPage';
 import { SettingsPage } from './pages/admin/SettingsPage';
 import { HRDashboard } from './pages/hr/HRDashboard';
 import { PayslipView } from './pages/hr/PayslipView';
+import { AdminAttendancePage } from './pages/admin/AdminAttendancePage';
+import { AuditLogPage } from './pages/admin/AuditLogPage';
 
 // Student pages
 import StudentAttendance from './pages/student/StudentAttendance';
 import StudentResults from './pages/student/StudentResults';
 import FeePayment from './pages/student/FeePayment';
 import StudentTimetable from './pages/student/StudentTimetable';
+import { StudentLibrary } from './pages/student/StudentLibrary';
+import { StudentNotifications } from './pages/student/StudentNotifications';
 
 // Faculty pages
 import FacultyAttendance from './pages/faculty/FacultyAttendance';
@@ -68,7 +71,8 @@ const App = () => {
             <Route index element={<AdminDashboardIndex />} />
             <Route path="users" element={<UserManagement />} />
             <Route path="academics" element={<AcademicSetup />} />
-            <Route path="attendance" element={<PlaceholderPage title="Attendance Reports" icon="📋" desc="Department-wise attendance reports and analytics" />} />
+            <Route path="attendance" element={<AdminAttendancePage />} />
+            <Route path="audit-logs" element={<AuditLogPage />} />
             <Route path="exams" element={<AdminExamsPage />} />
             <Route path="hr" element={<HRDashboard />} />
             <Route path="hr/payslip/:payslipId" element={<PayslipView />} />
@@ -133,7 +137,8 @@ const App = () => {
             <Route path="results" element={<StudentResults />} />
             <Route path="fees" element={<FeePayment />} />
             <Route path="timetable" element={<StudentTimetable />} />
-            <Route path="library" element={<PlaceholderPage title="Library" icon="📖" desc="Browse and track your issued books" />} />
+            <Route path="library" element={<StudentLibrary />} />
+            <Route path="notifications" element={<StudentNotifications />} />
           </Route>
 
           {/* Faculty Shell */}

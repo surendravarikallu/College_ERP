@@ -48,7 +48,8 @@ authRouter.post('/refresh', async (req: Request, res: Response, next: NextFuncti
 authRouter.post('/logout', authenticateToken, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { refreshToken } = req.body;
-    await AuthService.logout(refreshToken);
+    const accessToken = req.headers.authorization?.split(' ')[1];
+    await AuthService.logout(refreshToken, accessToken);
 
     if (req.user) {
       await AuditService.log(req.user.id, 'LOGOUT', 'User', req.user.id, null, null, req);

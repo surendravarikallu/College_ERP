@@ -176,4 +176,41 @@ export class AnalyticsService {
       avgAttendance: 85,
     };
   }
+
+  /**
+   * Export data as CSV.
+   */
+  static async exportData(type: string): Promise<string> {
+    if (type === 'students') {
+      const students = await prisma.student.findMany({
+        include: { department: { select: { name: true } } },
+        orderBy: { rollNumber: 'asc' },
+      });
+      const header = 'Roll Number,Name,Department,Semester,Phone,Active\n';
+      const rows = students.map(s => `${s.rollNumber},"${s.name}",${s.department?.name || ''},${s.semester},${s.phone || ''},${s.isActive}`).join('\n');
+      return header + rows;
+    }
+
+    if (type === 'performance') {
+      const grades = await prisma.newGradeRecord.findMany({
+        include: { student: { select: { name: true, rollNumber: true } } },
+        orderBy: [{ academicYear: 'desc' }, { semester: 'desc' }],
+      });
+      const header = 'Roll Number,Name,Semester,Academic Year,SGPA,CGPA,Total Credits\n';
+      const rows = grades.map(g => `${g.student.rollNumber},"${g.student.name}",${g.semester},${g.academicYear},${g.sgpa},${g.cgpa},${g.totalCredits}`).join('\n');
+      return header + rows;
+    }
+
+    if (type === 'finance') {
+      const invoices = await prisma.feeInvoice.findMany({
+        include: { student: { select: { name: true, rollNumber: true } } },
+        orderBy: { createdAt: 'desc' },
+      });
+      const header = 'Invoice #,Roll Number,Name,Amount,Status,Due Date\n';
+      const rows = invoices.map(i => `${i.invoiceNumber},${i.student.rollNumber},"${i.student.name}",${i.finalAmount},${i.status},${i.dueDate?.toISOString().split('T')[0] || ''}`).join('\n');
+      return header + rows;
+    }
+
+    return 'No data available for this export type.';
+  }
 }

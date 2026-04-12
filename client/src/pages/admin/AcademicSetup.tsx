@@ -17,8 +17,8 @@ const AcademicSetup = () => {
     setLoading(true);
     try {
       const [d, c, b, s] = await Promise.all([
-        apiClient.get('/academics/departments'), apiClient.get('/academics/courses'),
-        apiClient.get('/academics/batches'), apiClient.get('/academics/subjects'),
+        apiClient.get('/admin/departments'), apiClient.get('/admin/departments'),
+        apiClient.get('/admin/batches'), apiClient.get('/admin/subjects'),
       ]);
       setDepartments(d.data.data); setCourses(c.data.data);
       setBatches(b.data.data); setSubjects(s.data.data);
@@ -31,7 +31,7 @@ const AcademicSetup = () => {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault(); setFormError('');
     try {
-      await apiClient.post(`/academics/${tab}`, form);
+      await apiClient.post(`/admin/${tab}`, form);
       setShowModal(false); setForm({}); fetchAll();
     } catch (err: any) { setFormError(err.response?.data?.error || 'Failed'); }
   };
@@ -39,7 +39,7 @@ const AcademicSetup = () => {
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure?')) return;
     try {
-      await apiClient.delete(`/academics/${tab}/${id}`);
+      await apiClient.delete(`/admin/${tab}/${id}`);
       fetchAll();
     } catch (err: any) { alert(err.response?.data?.error || 'Failed'); }
   };

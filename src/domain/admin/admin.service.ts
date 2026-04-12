@@ -47,6 +47,7 @@ export class AdminService {
           role: true,
           isActive: true,
           lastLogin: true,
+          createdAt: true,
           StudentProfile: { select: { firstName: true, lastName: true, enrollmentNo: true } },
           FacultyProfile: { select: { firstName: true, lastName: true } },
         },
@@ -55,8 +56,14 @@ export class AdminService {
       prisma.user.count({ where })
     ]);
 
+    // Normalize profile data for the frontend
+    const normalizedUsers = users.map(u => ({
+      ...u,
+      profile: u.StudentProfile || u.FacultyProfile || null,
+    }));
+
     return {
-      users,
+      users: normalizedUsers,
       pagination: {
         page,
         limit,
@@ -64,6 +71,106 @@ export class AdminService {
         totalPages: Math.ceil(total / limit)
       }
     };
+  }
+
+  static async createUser(data: {
+    email: string;
+    password: string;
+    role: string;
+    firstName: string;
+    lastName: string;
+    enrollmentNo?: string;
+    departmentId?: string;
+    batchId?: string;
+  }, requestedBy: string, institutionId: string) {
+    const existing = await prisma.user.findUnique({ where: { email: data.email } });
+    if (existing) throw new APIError('CONFLICT', 'A user with this email already exists.');
+
+    const passwordHash = await bcrypt.hash(data.password, 10);
+
+    const user = await prisma.$transaction(async (tx) => {
+      const newUser = await tx.user.create({
+        data: {
+          id: require('crypto').randomUUID(),
+          institutionId,
+          email: data.email,
+          passwordHash,
+          role: data.role as any,
+          isActive: true,
+        }
+      });
+
+      // Create profile based on role
+      if (data.role === 'STUDENT') {
+        await tx.student.create({
+          data: {
+            userId: newUser.id,
+            name: `${data.firstName} ${data.lastName}`,
+            rollNumber: data.enrollmentNo || `STU-${Date.now()}`,
+            departmentId: data.departmentId || '',
+            batchId: data.batchId || null,
+          }
+        });
+        await tx.studentProfile.create({
+          data: {
+            id: require('crypto').randomUUID(),
+            userId: newUser.id,
+            institutionId,
+            firstName: data.firstName,
+            lastName: data.lastName,
+            enrollmentNo: data.enrollmentNo || `STU-${Date.now()}`,
+            batchId: data.batchId || null,
+          }
+        });
+      } else if (['FACULTY', 'HOD', 'PRINCIPAL'].includes(data.role)) {
+        const empId = `FAC-${Date.now().toString().slice(-6)}`;
+        await (tx.faculty as any).create({
+          data: {
+            userId: newUser.id,
+            name: `${data.firstName} ${data.lastName}`,
+            employeeId: empId,
+            departmentId: data.departmentId || '',
+          }
+        });
+        await tx.facultyProfile.create({
+          data: {
+            id: require('crypto').randomUUID(),
+            userId: newUser.id,
+            institutionId,
+            firstName: data.firstName,
+            lastName: data.lastName,
+            departmentId: data.departmentId || null,
+          }
+        });
+      }
+
+      return newUser;
+    });
+
+    await AuditService.log(requestedBy, 'USER_CREATED', 'User', user.id, null, { email: data.email, role: data.role });
+    return user;
+  }
+
+  static async getUserStats(institutionId: string) {
+    const [total, students, faculty, staff, active, inactive] = await Promise.all([
+      prisma.user.count({ where: { institutionId } }),
+      prisma.user.count({ where: { institutionId, role: 'STUDENT' } }),
+      prisma.user.count({ where: { institutionId, role: { in: ['FACULTY', 'HOD', 'PRINCIPAL'] } } }),
+      prisma.user.count({ where: { institutionId, role: 'STAFF' } }),
+      prisma.user.count({ where: { institutionId, isActive: true } }),
+      prisma.user.count({ where: { institutionId, isActive: false } }),
+    ]);
+    return { total, students, faculty, staff, active, inactive };
+  }
+
+  static async resetUserPassword(userId: string, newPassword: string, requestedBy: string) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new APIError('NOT_FOUND', 'User not found.');
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+    await AuditService.log(requestedBy, 'PASSWORD_RESET', 'User', userId, null, { by: requestedBy });
+    return { success: true };
   }
 
   static async updateUserStatus(userId: string, requestedBy: string, institutionId: string, isActive: boolean) {
@@ -89,6 +196,31 @@ export class AdminService {
   }
 
   /**
+   * --- Settings ---
+   */
+  static async getSettings(institutionId: string) {
+    const rows = await prisma.settings.findMany({ where: { institutionId } });
+    const result: Record<string, string> = {};
+    for (const r of rows) {
+      result[r.key] = r.value;
+    }
+    return result;
+  }
+
+  static async updateSettings(institutionId: string, data: Record<string, any>, requestedBy: string) {
+    const ops = Object.entries(data).map(([key, value]) =>
+      prisma.settings.upsert({
+        where: { institutionId_key: { institutionId, key } },
+        create: { id: require('crypto').randomUUID(), institutionId, key, value: String(value) },
+        update: { value: String(value) },
+      })
+    );
+    await prisma.$transaction(ops);
+    await AuditService.log(requestedBy, 'SETTINGS_UPDATED', 'Settings', 'SYSTEM', null, data);
+    return { success: true };
+  }
+
+  /**
    * --- Departments Administration ---
    */
   static async listDepartments(institutionId: string) {
@@ -111,7 +243,7 @@ export class AdminService {
 
     const dept = await prisma.department.create({
       data: {
-        id: `dept-${Date.now()}`, // Temporary ID logic if no cuid on this table
+        id: require('crypto').randomUUID(),
         institutionId: data.institutionId,
         name: data.name,
         code: data.code
@@ -134,7 +266,8 @@ export class AdminService {
    * --- Subjects Administration ---
    */
   static async listSubjects(departmentId: string, semester?: number) {
-    const where: any = { departmentId };
+    const where: any = {};
+    if (departmentId) where.departmentId = departmentId;
     if (semester) where.semester = semester;
 
     return prisma.newSubject.findMany({
@@ -169,9 +302,11 @@ export class AdminService {
   /**
    * --- Batches Administration ---
    */
-  static async listBatches(courseId: string) {
+  static async listBatches(courseId?: string) {
+    const where: any = {};
+    if (courseId) where.courseId = courseId;
     return prisma.batch.findMany({
-      where: { courseId },
+      where,
       orderBy: { year: 'desc' }
     });
   }

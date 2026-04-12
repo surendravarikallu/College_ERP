@@ -125,4 +125,23 @@ export class LibraryService {
       overdueCount: overdueBooks,
     };
   }
+
+  static async getMyBooks(userId: string) {
+    // Resolve student → libraryCard
+    const student = await prisma.student.findUnique({ where: { userId } });
+    if (!student) return { issued: [], card: null };
+
+    const card = await prisma.libraryCard.findUnique({
+      where: { studentId: student.id },
+      include: {
+        issues: {
+          where: { isReturned: false },
+          include: { book: true },
+          orderBy: { issueDate: 'desc' },
+        }
+      }
+    });
+
+    return { issued: card?.issues || [], card: card ? { id: card.id, cardNumber: card.cardNumber } : null };
+  }
 }

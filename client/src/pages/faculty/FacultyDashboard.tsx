@@ -14,21 +14,6 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from 'recharts';
 
-const classPerformance = [
-  { subject: 'CS301', avgAttendance: 88, avgMarks: 74 },
-  { subject: 'CS302', avgAttendance: 82, avgMarks: 68 },
-  { subject: 'CS101', avgAttendance: 91, avgMarks: 79 },
-];
-
-const gradingDistribution = [
-  { grade: 'A+', count: 12, color: '#22c55e' },
-  { grade: 'A', count: 28, color: '#6366f1' },
-  { grade: 'B+', count: 35, color: '#8b5cf6' },
-  { grade: 'B', count: 20, color: '#a78bfa' },
-  { grade: 'C', count: 8, color: '#f59e0b' },
-  { grade: 'F', count: 2, color: '#ef4444' },
-];
-
 const DashboardOverview = () => {
   const { user } = useAuth();
   const { data, loading, error, refetch } = useDashboardData<any>(
@@ -40,6 +25,29 @@ const DashboardOverview = () => {
   if (error) return <ErrorCard message={error} onRetry={refetch} />;
 
   const { todayClasses, gradingBacklog, assignedSubjects } = data;
+
+  const classPerformance = (data.subjectStats || []).length > 0
+    ? (data.subjectStats as any[]).map((s: any) => ({
+        subject: s.code || s.name,
+        avgAttendance: s.attendancePct || 0,
+        avgMarks: s.avgMarks || 0,
+      }))
+    : [
+        { subject: 'CS301', avgAttendance: 88, avgMarks: 74 },
+        { subject: 'CS302', avgAttendance: 82, avgMarks: 68 },
+        { subject: 'CS101', avgAttendance: 91, avgMarks: 79 },
+      ];
+
+  const gradingDistribution = (data.gradeDistribution || []).length > 0
+    ? data.gradeDistribution
+    : [
+        { grade: 'A+', count: 12, color: '#22c55e' },
+        { grade: 'A', count: 28, color: '#6366f1' },
+        { grade: 'B+', count: 35, color: '#8b5cf6' },
+        { grade: 'B', count: 20, color: '#a78bfa' },
+        { grade: 'C', count: 8, color: '#f59e0b' },
+        { grade: 'F', count: 2, color: '#ef4444' },
+      ];
 
   return (
     <>
@@ -174,7 +182,7 @@ const DashboardOverview = () => {
           <ResponsiveContainer width="100%" height={220}>
             <PieChart>
               <Pie data={gradingDistribution} cx="50%" cy="50%" innerRadius={50} outerRadius={85} paddingAngle={3} dataKey="count">
-                {gradingDistribution.map((entry, idx) => (
+                {gradingDistribution.map((entry: any, idx: number) => (
                   <Cell key={idx} fill={entry.color} />
                 ))}
               </Pie>
@@ -182,7 +190,7 @@ const DashboardOverview = () => {
             </PieChart>
           </ResponsiveContainer>
           <div className="flex flex-wrap gap-2 mt-2">
-            {gradingDistribution.map(d => (
+            {gradingDistribution.map((d: any) => (
               <div key={d.grade} className="flex items-center gap-1.5 text-xs text-slate-500">
                 <div className="w-2.5 h-2.5 rounded-full" style={{ background: d.color }} /> {d.grade}: {d.count}
               </div>

@@ -17,7 +17,8 @@ const validateBody = (schema: z.ZodType<any>) => (req: AuthRequest, res: Respons
   }
 };
 
-// Users
+// ═══ Users ═══
+
 adminRouter.get('/users', authenticate, authorize('SUPER_ADMIN', 'ADMIN'), async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const filters = {
@@ -31,6 +32,31 @@ adminRouter.get('/users', authenticate, authorize('SUPER_ADMIN', 'ADMIN'), async
   } catch (err) { next(err); }
 });
 
+adminRouter.get('/users/stats', authenticate, authorize('SUPER_ADMIN', 'ADMIN'), async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const data = await AdminService.getUserStats(req.user!.institutionId!);
+    res.json({ success: true, data });
+  } catch (err) { next(err); }
+});
+
+const createUserSchema = z.object({
+  email: z.string().min(1),
+  password: z.string().min(6),
+  role: z.string(),
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
+  enrollmentNo: z.string().optional(),
+  departmentId: z.string().optional(),
+  batchId: z.string().optional(),
+});
+
+adminRouter.post('/users', authenticate, authorize('SUPER_ADMIN', 'ADMIN'), validateBody(createUserSchema), async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const data = await AdminService.createUser(req.body, req.user!.id, req.user!.institutionId!);
+    res.status(201).json({ success: true, data });
+  } catch (err) { next(err); }
+});
+
 const userStatusSchema = z.object({ isActive: z.boolean() });
 adminRouter.patch('/users/:id/status', authenticate, authorize('SUPER_ADMIN', 'ADMIN'), validateBody(userStatusSchema), async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -39,7 +65,32 @@ adminRouter.patch('/users/:id/status', authenticate, authorize('SUPER_ADMIN', 'A
   } catch (err) { next(err); }
 });
 
-// Departments
+const resetPasswordSchema = z.object({ newPassword: z.string().min(6) });
+adminRouter.post('/users/:id/reset-password', authenticate, authorize('SUPER_ADMIN', 'ADMIN'), validateBody(resetPasswordSchema), async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const data = await AdminService.resetUserPassword(req.params.id, req.body.newPassword, req.user!.id);
+    res.json({ success: true, data });
+  } catch (err) { next(err); }
+});
+
+// ═══ Settings ═══
+
+adminRouter.get('/settings', authenticate, authorize('SUPER_ADMIN', 'ADMIN'), async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const data = await AdminService.getSettings(req.user!.institutionId!);
+    res.json({ success: true, data });
+  } catch (err) { next(err); }
+});
+
+adminRouter.put('/settings', authenticate, authorize('SUPER_ADMIN', 'ADMIN'), async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const data = await AdminService.updateSettings(req.user!.institutionId!, req.body, req.user!.id);
+    res.json({ success: true, data });
+  } catch (err) { next(err); }
+});
+
+// ═══ Departments ═══
+
 adminRouter.get('/departments', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const data = await AdminService.listDepartments(req.user!.institutionId!);
@@ -55,7 +106,8 @@ adminRouter.post('/departments', authenticate, authorize('SUPER_ADMIN', 'ADMIN')
   } catch (err) { next(err); }
 });
 
-// Subjects
+// ═══ Subjects ═══
+
 adminRouter.get('/subjects', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const data = await AdminService.listSubjects(req.query.departmentId as string, req.query.semester ? parseInt(req.query.semester as string) : undefined);
@@ -71,7 +123,8 @@ adminRouter.post('/subjects', authenticate, authorize('SUPER_ADMIN', 'ADMIN'), v
   } catch (err) { next(err); }
 });
 
-// Batches
+// ═══ Batches ═══
+
 adminRouter.get('/batches', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const data = await AdminService.listBatches(req.query.courseId as string);
@@ -79,7 +132,8 @@ adminRouter.get('/batches', authenticate, async (req: AuthRequest, res: Response
   } catch (err) { next(err); }
 });
 
-// Faculty-Subject Mappings
+// ═══ Faculty-Subject Mappings ═══
+
 const assignSubjectSchema = z.object({ facultyId: z.string(), subjectId: z.string(), batchId: z.string().optional(), semester: z.number().int(), academicYear: z.string() });
 adminRouter.post('/faculty-subjects', authenticate, authorize('SUPER_ADMIN', 'ADMIN', 'HOD'), validateBody(assignSubjectSchema), async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -104,5 +158,61 @@ adminRouter.get('/students-by-subject/:subjectId', authenticate, authorize('FACU
     res.json({ success: true, data });
   } catch (err) { next(err); }
 });
+
+// ═══ Reset Password ═══
+adminRouter.patch('/users/:id/reset-password', authenticate, authorize('SUPER_ADMIN', 'ADMIN'),
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const bcrypt = await import('bcrypt');
+      const { prisma } = await import('../../core/database/prisma.client');
+      const { AuditService } = await import('../audit/audit.service');
+      const { newPassword } = z.object({ newPassword: z.string().min(8) }).parse(req.body);
+      const passwordHash = await bcrypt.hash(newPassword, 12);
+      await prisma.user.update({ where: { id: req.params.id }, data: { passwordHash } });
+      await AuditService.log(req.user!.id, 'ADMIN_PASSWORD_RESET', 'User', req.params.id);
+      res.json({ success: true, message: 'Password reset successfully' });
+    } catch (err) { next(err); }
+  }
+);
+
+// ═══ Settings ═══
+adminRouter.get('/settings', authenticate, authorize('SUPER_ADMIN', 'ADMIN'),
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const { prisma } = await import('../../core/database/prisma.client');
+      const settings = await prisma.settings.findMany({
+        where: { institutionId: req.user!.institutionId! },
+      });
+      const configMap: Record<string, any> = {};
+      settings.forEach((s: any) => {
+        configMap[s.key] = s.value === 'true' ? true
+          : s.value === 'false' ? false
+          : s.value;
+      });
+      res.json({ success: true, data: configMap });
+    } catch (err) { next(err); }
+  }
+);
+
+adminRouter.put('/settings', authenticate, authorize('SUPER_ADMIN', 'ADMIN'),
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const { prisma } = await import('../../core/database/prisma.client');
+      const { AuditService } = await import('../audit/audit.service');
+      const institutionId = req.user!.institutionId!;
+      const entries = Object.entries(req.body);
+      for (const [key, value] of entries) {
+        const crypto = await import('crypto');
+        await prisma.settings.upsert({
+          where: { institutionId_key: { institutionId, key } },
+          create: { id: crypto.randomUUID(), institutionId, key, value: String(value) },
+          update: { value: String(value) },
+        });
+      }
+      await AuditService.log(req.user!.id, 'SETTINGS_UPDATED', 'Settings', institutionId, null, req.body);
+      res.json({ success: true, message: 'Settings saved successfully' });
+    } catch (err) { next(err); }
+  }
+);
 
 export { adminRouter };

@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Layout } from '../../components/layout/Layout';
-import { api } from '../../api/client';
-import { toast } from 'react-hot-toast';
+import { apiClient } from '../../api/client';
+import { useToast } from '../../hooks/use-toast';
 
 export const AdminExamsPage = () => {
+  const { toast } = useToast();
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Note: Only partial mock-up of extensive fetching/rendering
   useEffect(() => {
     fetchSessions();
   }, []);
@@ -15,10 +14,10 @@ export const AdminExamsPage = () => {
   const fetchSessions = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/exams/sessions');
+      const res = await apiClient.get('/exams/sessions');
       setSessions(res.data.data || []);
     } catch {
-      toast.error('Failed to fetch exam sessions');
+      toast({ title: 'Error', description: 'Failed to fetch exam sessions', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -26,70 +25,73 @@ export const AdminExamsPage = () => {
 
   const publishResults = async (sessionId: string) => {
     try {
-      await api.post('/exams/results/publish', { examSessionId: sessionId });
-      toast.success('Results published successfully');
+      await apiClient.post('/exams/results/publish', { examSessionId: sessionId });
+      toast({ title: 'Success', description: 'Results published successfully' });
       fetchSessions();
     } catch {
-      toast.error('Failed to publish results');
+      toast({ title: 'Error', description: 'Failed to publish results', variant: 'destructive' });
     }
   };
 
   return (
-    <Layout>
-      <div className="p-6 max-w-7xl mx-auto space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Exam Administration</h1>
-            <p className="mt-1 text-sm text-gray-500">Manage sessions, hall tickets, and results</p>
-          </div>
-          <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Create Session</button>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Exam Administration</h1>
+          <p className="mt-1 text-sm text-slate-500">Manage sessions, hall tickets, and results</p>
         </div>
+        <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-500 font-semibold">Create Session</button>
+      </div>
 
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="p-6 border-b">
-            <h3 className="text-lg font-medium text-gray-900">Exam Sessions</h3>
-          </div>
-          
-          {loading ? (
-             <div className="p-6 text-gray-500">Loading sessions...</div>
-          ) : (
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+      <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+        <div className="p-4 border-b border-slate-800">
+          <h3 className="text-base font-semibold">Exam Sessions</h3>
+        </div>
+        
+        {loading ? (
+          <div className="flex justify-center py-16"><div className="w-8 h-8 border-2 border-slate-700 border-t-indigo-500 rounded-full animate-spin" /></div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-slate-800/50">
+                  {['Name', 'Type', 'Status', 'Actions'].map(h => (
+                    <th key={h} className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500">{h}</th>
+                  ))}
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody>
                 {sessions.map((session: any) => (
-                  <tr key={session.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{session.name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{session.examType}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {session.isLocked ? 'Locked / Published' : 'Draft / Active'}
+                  <tr key={session.id} className="border-t border-slate-800 hover:bg-slate-800/30 transition-colors">
+                    <td className="px-5 py-3.5 text-sm font-medium">{session.name}</td>
+                    <td className="px-5 py-3.5 text-sm text-slate-400">{session.examType}</td>
+                    <td className="px-5 py-3.5 text-sm">
+                      <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${session.isLocked ? 'bg-emerald-500/15 text-emerald-400' : 'bg-blue-500/15 text-blue-400'}`}>
+                        {session.isLocked ? 'Locked / Published' : 'Draft / Active'}
+                      </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button className="text-indigo-600 hover:text-indigo-900 mr-4">Hall Tickets</button>
-                      <button 
-                        onClick={() => publishResults(session.id)}
-                        disabled={session.isLocked}
-                        className={`text-green-600 hover:text-green-900 ${session.isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
-                      >
-                        Publish Results
-                      </button>
+                    <td className="px-5 py-3.5">
+                      <div className="flex gap-3">
+                        <button className="text-indigo-400 hover:text-indigo-300 text-sm">Hall Tickets</button>
+                        <button 
+                          onClick={() => publishResults(session.id)}
+                          disabled={session.isLocked}
+                          className={`text-sm ${session.isLocked ? 'text-slate-600 cursor-not-allowed' : 'text-emerald-400 hover:text-emerald-300'}`}
+                        >
+                          Publish Results
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
                 {sessions.length === 0 && (
-                  <tr><td colSpan={4} className="px-6 py-4 text-center text-sm text-gray-500">No exam sessions found</td></tr>
+                  <tr><td colSpan={4} className="px-5 py-8 text-center text-sm text-slate-500">No exam sessions found</td></tr>
                 )}
               </tbody>
             </table>
-          )}
-        </div>
+          </div>
+        )}
       </div>
-    </Layout>
+    </div>
   );
 };
