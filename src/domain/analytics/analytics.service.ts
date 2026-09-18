@@ -14,6 +14,9 @@ export class AnalyticsService {
         totalFacultyLegacy,
         pendingFees,
         pendingFeesNew,
+        collectedFeesNew,
+        collectedFeesLegacy,
+        attendanceRecords,
       ] = await Promise.all([
         prisma.student.count({ where: { isActive: true } }),
         prisma.studentProfile.count({ where: { User: { isActive: true } } }),
@@ -21,6 +24,9 @@ export class AnalyticsService {
         prisma.facultyProfile.count({ where: { User: { isActive: true } } }),
         prisma.invoice.aggregate({ where: { status: 'DUE' }, _sum: { totalAmount: true } }),
         prisma.feeInvoice.aggregate({ where: { status: 'PENDING' }, _sum: { finalAmount: true } }),
+        prisma.feeInvoice.aggregate({ _sum: { collectedAmount: true } }),
+        prisma.payment.aggregate({ where: { status: 'SUCCESS' }, _sum: { amountPaid: true } }),
+        prisma.newAttendance.count({ select: { _all: true, status: true } }), // Simplified for global rate
       ]);
 
       const totalStudents = totalStudentsNew || totalStudentsLegacy;
@@ -34,9 +40,20 @@ export class AnalyticsService {
 
       const pendingDues = (pendingFeesNew._sum.finalAmount || 0) + (pendingFees._sum.totalAmount || 0);
 
-      const attendanceRate = 93; // Mocked average
-      const feeCollection = 2450000; // Mocked historical collection
-      const activeSessions = await prisma.examSession.count({ where: { status: 'ACTIVE' } as any }).catch(() => 0);
+      const totalAtt = await prisma.newAttendance.count();
+      const presentAtt = await prisma.newAttendance.count({ where: { status: { in: ['PRESENT', 'OD'] } } });
+      const attendanceRate = totalAtt > 0 ? Math.round((presentAtt / totalAtt) * 100) : 0;
+
+      // Dynamic calculation for fee collection
+      const feeCollection = (collectedFeesNew._sum.collectedAmount || 0) + (collectedFeesLegacy._sum.amountPaid || 0);
+      
+      const now = new Date();
+      const activeSessions = await prisma.examSession.count({
+        where: {
+          isLocked: false,
+          endDate: { gte: now }
+        }
+      }).catch(() => 0);
 
       return {
         totalStudents,
