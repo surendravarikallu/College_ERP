@@ -457,7 +457,7 @@ model TimeSlot {
 }
 
 model User {
-  id               String          @id
+  id               String          @id @default(cuid())
   institutionId    String
   email            String          @unique
   passwordHash     String
@@ -782,6 +782,7 @@ enum Role {
   FACULTY
   STUDENT
   STAFF
+  CASHIER
   EXAM_CELL
   ACCOUNTS
   HOSTEL_WARDEN
@@ -794,6 +795,25 @@ enum ScriptStatus {
   EVALUATED
   REVIEWED
   FINALIZED
+}
+
+enum StudentStatus {
+  APPLIED
+  APPROVED
+  ADMITTED
+  ACTIVE
+}
+
+enum QuotaType {
+  CONVENER
+  MANAGEMENT
+}
+
+enum Category {
+  SC
+  ST
+  OBC
+  GEN
 }
 
 enum WorkflowStatus {
@@ -927,16 +947,25 @@ model Student {
   isActive      Boolean    @default(true)
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
+  admissionNumber String?     @unique
+  quotaType       QuotaType?
+  category        Category?
+  feeStructureId  String?
+  feeStructure    FeeStructureNew? @relation(fields: [feeStructureId], references: [id])
+  admissionDate   DateTime?
+  status          StudentStatus    @default(ACTIVE)
 
   attendances      NewAttendance[]
   marks            NewMark[]
   gradeRecordsNew  NewGradeRecord[]
   hallTicketsNew   NewHallTicket[]
   feeInvoices      FeeInvoice[]
+  offlineReceipts  OfflinePaymentReceipt[]
   hostelAllocation HostelAllocation[]
   libraryCard      LibraryCard?
   scholarshipNew   ScholarshipNew?
   transportPasses  TransportPassNew[]
+  feeCard          FeeCard?
 
   @@index([departmentId])
   @@index([batchId])
@@ -1122,6 +1151,48 @@ model FeeStructureNew {
   createdAt    DateTime  @default(now())
 
   invoices FeeInvoice[]
+  components FeeComponent[]
+  students   Student[]
+  admissions AdmissionApplication[]
+  feeCards   FeeCard[]
+}
+
+model AdmissionApplication {
+  id              String        @id @default(cuid())
+  admissionNumber String        @unique
+  name            String
+  email           String        @unique
+  phone           String?
+  departmentId    String
+  quotaType       QuotaType
+  category        Category
+  feeStructureId  String
+  feeStructure    FeeStructureNew @relation(fields: [feeStructureId], references: [id])
+  status          StudentStatus @default(APPLIED)
+  admissionDate   DateTime      @default(now())
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model FeeCard {
+  id              String   @id @default(cuid())
+  studentId       String   @unique
+  student         Student  @relation(fields: [studentId], references: [id])
+  feeStructureId  String
+  feeStructure    FeeStructureNew @relation(fields: [feeStructureId], references: [id])
+  totalAmount     Float
+  paidAmount      Float    @default(0)
+  dueAmount       Float
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model FeeComponent {
+  id              String   @id @default(cuid())
+  feeStructureId  String
+  feeStructure    FeeStructureNew @relation(fields: [feeStructureId], references: [id])
+  name            String
+  amount          Float
 }
 
 model FeeInvoice {
@@ -1131,16 +1202,22 @@ model FeeInvoice {
   student        Student         @relation(fields: [studentId], references: [id])
   feeStructureId String
   feeStructure   FeeStructureNew @relation(fields: [feeStructureId], references: [id])
-  amount         Float
-  discount       Float           @default(0)
-  finalAmount    Float
-  status         PaymentStatus   @default(PENDING)
-  dueDate        DateTime?
-  paidAt         DateTime?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  amount          Float
+  discount        Float           @default(0)
+  finalAmount     Float
+  collectedAmount Float           @default(0)
+  fineAmount      Float           @default(0)
+  excessAmount    Float           @default(0)
+  period          String          @default("")
+  academicYear    String          @default("")
+  status          PaymentStatus   @default(PENDING)
+  dueDate         DateTime?
+  paidAt          DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
-  transactions PaymentTransaction[]
+  transactions    PaymentTransaction[]
+  offlineReceipts OfflinePaymentReceipt[]
 
   @@index([studentId])
   @@index([status])
@@ -1396,4 +1473,60 @@ model TransportPassNew {
 
   @@index([studentId])
   @@index([routeId])
+}
+
+enum PaymentMode {
+  CASH
+  CHEQUE
+  DD
+  ONLINE
+  LEGACY_ONLINE
+  NEFT
+  UPI
+}
+
+model FeeReceiptCounter {
+  id            String   @id @default(cuid())
+  institutionId String
+  lastReceiptNo Int      @default(0)
+  updatedAt     DateTime @updatedAt
+
+  @@unique([institutionId])
+}
+
+model OfflinePaymentReceipt {
+  id             String      @id @default(cuid())
+  receiptNo      Int
+  receiptNumber  String      @unique
+  institutionId  String
+  studentId      String
+  student        Student     @relation(fields: [studentId], references: [id])
+  feeInvoiceId   String
+  feeInvoice     FeeInvoice  @relation(fields: [feeInvoiceId], references: [id])
+  academicYear   String
+  feeParticulars String
+  period         String
+  amount         Float
+  fineAmount     Float       @default(0)
+  totalAmount    Float
+  paymentMode    PaymentMode @default(CASH)
+  chequeNo       String?
+  chequeDate     DateTime?
+  bankName       String?
+  refNo          String?
+  transactionId  String?
+  narration      String?
+  excessAmount   Float       @default(0)
+  receiptDate    DateTime    @default(now()) @db.Date
+  collectedBy    String
+  isDeleted      Boolean     @default(false)
+  deletedAt      DateTime?
+  deletedBy      String?
+  deleteReason   String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([studentId])
+  @@index([institutionId, receiptDate])
+  @@index([receiptNumber])
 }
