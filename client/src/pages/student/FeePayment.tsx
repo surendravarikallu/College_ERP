@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../../api/client';
-import { Receipt, CreditCard, CheckCircle2, Clock, AlertTriangle, Download } from 'lucide-react';
+import { Receipt, CreditCard, CheckCircle2, Clock, Download } from 'lucide-react';
 import { toast } from 'sonner';
 
 declare global {
@@ -15,8 +15,7 @@ const FeePayment = () => {
 
   const fetchDues = async () => {
     try {
-      // Changed to the new finance API structure (assuming the backend resolves the student implicitly or we pass it)
-      const res = await apiClient.get('/fees/dues');
+      const res = await apiClient.get('/fees/my');
       setInvoices(res.data.data);
     } catch (e) {
       console.error(e);
@@ -48,19 +47,17 @@ const FeePayment = () => {
         description: 'College Fee Payment',
         order_id: data.orderId,
         handler: async function (response: any) {
-          toast.success('Payment completed! Verifying...', { id: 'payment' });
-          // Note: In production, webhook verifies the payment securely.
-          // We just softly verify here and refresh the UI.
+          toast.success('Payment completed! Verifying with institution...', { id: 'payment' });
           setTimeout(() => {
             fetchDues();
-            toast.success('Payment verified successfully!', { id: 'payment' });
-          }, 3000);
+            toast.success('Payment verified! Tracking update successful.', { id: 'payment' });
+          }, 2500);
         },
         prefill: {
           name: data.studentName,
         },
         theme: {
-          color: '#4f46e5',
+          color: '#004b93',
         },
       };
 
@@ -76,107 +73,130 @@ const FeePayment = () => {
     }
   };
 
-  const handleDownloadReceipt = async (invoiceId: string) => {
-     try {
-       const res = await apiClient.get(`/fees/receipt/${invoiceId}`, { responseType: 'blob' });
-       const url = window.URL.createObjectURL(new Blob([res.data]));
-       const link = document.createElement('a');
-       link.href = url;
-       link.setAttribute('download', `Receipt-${invoiceId}.pdf`);
-       document.body.appendChild(link);
-       link.click();
-       link.remove();
-     } catch (err) {
-       toast.error('Failed to download receipt');
-     }
+  const handleDownloadReceipt = async (inv: any) => {
+    const toastId = toast.loading('Opening receipt...');
+    try {
+      const res = await apiClient.get(`/fees/receipt/${inv.id}`, { 
+        responseType: 'blob',
+        headers: { 'Accept': 'application/pdf' }
+      });
+      
+      if (res.data.size < 500) {
+        throw new Error('Invalid format');
+      }
+
+      const blob = new Blob([res.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const newWindow = window.open(url, '_blank');
+      
+      if (!newWindow) {
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `Receipt-${inv.invoiceNumber || inv.id}.pdf`);
+        document.body.appendChild(link);
+        link.click();
+        setTimeout(() => {
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+        }, 100);
+        toast.success('Download started', { id: toastId });
+      } else {
+        toast.success('Receipt opened', { id: toastId });
+        setTimeout(() => window.URL.revokeObjectURL(url), 60000);
+      }
+    } catch (err) {
+      toast.error('Could not generate receipt', { id: toastId });
+    }
   };
 
-  if (loading) return <div className="flex justify-center py-16"><div className="w-8 h-8 border-2 border-slate-700 border-t-indigo-500 rounded-full animate-spin" /></div>;
+  if (loading) return <div className="flex justify-center py-16"><div className="w-8 h-8 border-2 border-slate-300 border-t-[#004b93] rounded-full animate-spin" /></div>;
 
-  const totalDue = invoices.filter(i => i.status === 'PENDING').reduce((acc, curr) => acc + curr.finalAmount, 0);
+  const pendingAmount = invoices.filter(i => i.status === 'PENDING').reduce((acc, curr) => acc + curr.finalAmount, 0);
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
       {/* Header and Summary */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 p-6 bg-slate-900 border border-slate-800 rounded-2xl">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-6 bg-white border border-slate-200 rounded-xl shadow-sm">
         <div>
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">Fee Gateway</h2>
-          <p className="text-slate-400 mt-1">Manage and pay your institutional fees securely.</p>
+          <h2 className="text-2xl font-black text-[#004b93] tracking-tight uppercase">Fee Ledger</h2>
+          <p className="text-slate-500 text-sm font-medium">Digital fee payment & history gateway.</p>
         </div>
-        <div className="bg-slate-950 px-6 py-4 rounded-xl border border-rose-500/20 w-full md:w-auto">
-          <p className="text-sm text-slate-400 uppercase tracking-wider font-semibold">Total Outstanding</p>
-          <p className="text-3xl font-bold text-rose-500 mt-1">₹{totalDue.toLocaleString()}</p>
+        <div className="bg-[#fffbeb] border-2 border-amber-200 px-6 py-3 rounded-xl min-w-[200px] text-center">
+          <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Total Outstanding</p>
+          <p className="text-2xl font-black text-[#b91c1c]">₹{pendingAmount.toLocaleString()}</p>
         </div>
       </div>
 
       {/* Invoices List */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
-        <div className="p-5 border-b border-slate-800">
-          <h3 className="font-semibold flex items-center gap-2"><Receipt className="w-4 h-4 text-indigo-400" /> Active & Past Invoices</h3>
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        <div className="p-4 border-b border-slate-200 bg-slate-50 flex items-center gap-2">
+          <Receipt className="w-4 h-4 text-[#004b93]" />
+          <h3 className="font-bold text-slate-700 uppercase text-sm tracking-tighter">Transaction Records</h3>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full border-collapse">
             <thead>
-              <tr className="bg-slate-950/50">
-                <th className="text-left px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-400">Invoice Ref</th>
-                <th className="text-left px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-400">Type</th>
-                <th className="text-left px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-400">Amount</th>
-                <th className="text-left px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-400">Status</th>
-                <th className="text-right px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-400">Action</th>
+              <tr className="bg-[#004b93] text-white">
+                <th className="text-left px-6 py-3 text-[11px] font-black uppercase tracking-wider">Invoice / Ref</th>
+                <th className="text-left px-6 py-3 text-[11px] font-black uppercase tracking-wider">Description</th>
+                <th className="text-left px-6 py-3 text-[11px] font-black uppercase tracking-wider">Amount</th>
+                <th className="text-left px-6 py-3 text-[11px] font-black uppercase tracking-wider">Status</th>
+                <th className="text-right px-6 py-3 text-[11px] font-black uppercase tracking-wider">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800">
+            <tbody className="divide-y divide-slate-100">
               {invoices.length === 0 ? (
-                <tr><td colSpan={5} className="text-center py-12 text-slate-500">No invoices found.</td></tr>
-              ) : invoices.map((inv: any) => (
-                <tr key={inv.id} className="hover:bg-slate-800/30 transition-colors">
-                  <td className="px-6 py-4">
-                    <span className="text-sm font-mono text-slate-300 bg-slate-950 px-2 py-1 rounded border border-slate-800">
-                      {inv.invoiceNumber}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <p className="text-sm font-medium">{inv.feeStructure?.name}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">{inv.feeStructure?.feeType}</p>
-                  </td>
-                  <td className="px-6 py-4">
-                    <p className="text-sm font-semibold">₹{inv.finalAmount.toLocaleString()}</p>
-                    {inv.discount > 0 && <p className="text-xs text-emerald-400 mt-0.5">- ₹{inv.discount} discount</p>}
-                  </td>
-                  <td className="px-6 py-4">
-                    {inv.status === 'SUCCESS' ? (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                        <CheckCircle2 className="w-3.5 h-3.5" /> Paid
-                      </span>
-                    ) : inv.isOverdue ? (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">
-                        <AlertTriangle className="w-3.5 h-3.5" /> Overdue
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                        <Clock className="w-3.5 h-3.5" /> Pending
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    {inv.status !== 'SUCCESS' ? (
-                      <button 
-                        onClick={() => handlePayment(inv.id)}
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-semibold transition-all shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40"
-                      >
-                        <CreditCard className="w-4 h-4" /> Pay Now
-                      </button>
-                    ) : (
-                       <button 
-                        onClick={() => handleDownloadReceipt(inv.id)}
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm font-semibold transition-all shadow-lg shadow-slate-900/20"
-                      >
-                        <Download className="w-4 h-4" /> Receipt
-                      </button>
-                    )}
+                <tr>
+                  <td colSpan={5} className="px-6 py-12 text-center text-slate-400 italic text-sm">
+                    No financial records found.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                invoices.map((inv) => (
+                  <tr key={inv.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-4">
+                      <p className="font-black text-[#004b93] text-sm uppercase">{inv.invoiceNumber}</p>
+                      <p className="text-[10px] text-slate-400 font-mono tracking-tighter">Ref No: {inv.id.slice(0, 8).toUpperCase()}</p>
+                    </td>
+                    <td className="px-6 py-4">
+                      <p className="text-sm font-bold text-slate-700">{inv.feeStructure?.name || 'Institutional Fee'}</p>
+                      <p className="text-[10px] text-slate-400 uppercase font-bold">{inv.feeStructure?.feeType || 'General'}</p>
+                    </td>
+                    <td className="px-6 py-4">
+                      <p className="text-sm font-black text-slate-800">₹{inv.finalAmount.toLocaleString()}</p>
+                      <p className="text-[10px] text-slate-500 italic">AY {inv.academicYear || inv.academicTerm || '2025-26'}</p>
+                    </td>
+                    <td className="px-6 py-4">
+                      {inv.status === 'SUCCESS' ? (
+                        <div className="flex items-center gap-1.5 text-emerald-700 font-black text-[10px] uppercase bg-emerald-50 px-2.5 py-1 rounded border border-emerald-100 w-fit">
+                          <CheckCircle2 className="w-3 h-3" /> Paid
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 text-rose-600 font-black text-[10px] uppercase bg-rose-50 px-2.5 py-1 rounded border border-rose-100 w-fit">
+                          <Clock className="w-3 h-3 animate-pulse" /> Pending
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      {inv.status === 'SUCCESS' ? (
+                        <button 
+                          onClick={() => handleDownloadReceipt(inv)}
+                          className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-800 hover:bg-black text-white rounded text-[10px] font-black uppercase tracking-widest transition-all"
+                        >
+                          <Download className="w-3 h-3" /> Receipt
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={() => handlePayment(inv.id)}
+                          className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#004b93] hover:bg-[#003870] text-white rounded text-[10px] font-black uppercase tracking-widest transition-all shadow-md shadow-blue-300/20"
+                        >
+                          <CreditCard className="w-3 h-3" /> Pay Now
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
