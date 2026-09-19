@@ -88,6 +88,17 @@ export class AdminService {
 
     const passwordHash = await bcrypt.hash(data.password, 10);
 
+    // Validate departmentId for roles that require it
+    if (['FACULTY', 'HOD', 'PRINCIPAL'].includes(data.role)) {
+      if (!data.departmentId) {
+        throw new APIError('BAD_REQUEST', 'Department is required for Faculty / HOD / Principal roles.');
+      }
+      const dept = await prisma.department.findUnique({ where: { id: data.departmentId } });
+      if (!dept) {
+        throw new APIError('NOT_FOUND', 'Selected department does not exist.');
+      }
+    }
+
     const user = await prisma.$transaction(async (tx) => {
       const newUser = await tx.user.create({
         data: {
