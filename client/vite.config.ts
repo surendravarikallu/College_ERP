@@ -23,6 +23,13 @@ export default defineConfig({
       '/socket.io': {
         target: 'http://127.0.0.1:8091',
         ws: true,
+        configure: (proxy) => {
+          proxy.on('error', (err) => {
+            const code = (err as any).code;
+            if (code === 'ECONNREFUSED' || code === 'ECONNRESET' || code === 'ECONNABORTED') return;
+            console.error('Proxy Error:', err);
+          });
+        }
       }
     }
   },

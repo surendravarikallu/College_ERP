@@ -9,17 +9,23 @@ export default {
     extend: {
       colors: {
         brand: {
-          50: '#f0f4ff',
-          100: '#e0eaff',
-          500: '#4338ca',
-          600: '#3730a3',
-          900: '#1e1b4b',
+          50: '#eff6ff',
+          100: '#dbeafe',
+          200: '#bfdbfe',
+          300: '#93c5fd',
+          400: '#60a5fa',
+          500: '#3b82f6',
+          600: '#2563eb',
+          700: '#1d4ed8',
+          800: '#1e40af',
+          900: '#1e3a8a',
+          950: '#172554',
         },
         surface: {
-          light: '#ffffff',
-          dark: '#0f172a',
-          glass: 'rgba(255, 255, 255, 0.7)',
-          darkGlass: 'rgba(15, 23, 42, 0.7)',
+          light: '#f8fafc',
+          dark: '#020817',
+          glass: 'rgba(255, 255, 255, 0.75)',
+          darkGlass: 'rgba(2, 8, 23, 0.75)',
         },
         // shadcn/ui CSS variable colors
         border: "hsl(var(--border))",

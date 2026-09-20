@@ -19,6 +19,7 @@ const menuConfig: Record<string, { label: string; path: string; icon: React.Reac
   ADMIN: [
     { label: 'Dashboard', path: '/admin', icon: <LayoutDashboard className="w-4 h-4" /> },
     { label: 'Users', path: '/admin/users', icon: <Users className="w-4 h-4" /> },
+    { label: 'Office', path: '/admin/office', icon: <Building2 className="w-4 h-4" /> },
     { label: 'Academics', path: '/admin/academics', icon: <BookOpen className="w-4 h-4" /> },
     { label: 'Attendance', path: '/admin/attendance', icon: <ClipboardList className="w-4 h-4" /> },
     { label: 'Exams', path: '/admin/exams', icon: <FileText className="w-4 h-4" /> },
@@ -51,7 +52,7 @@ const menuConfig: Record<string, { label: string; path: string; icon: React.Reac
 };
 
 const pageTitles: Record<string, string> = {
-  '/admin': 'Admin Dashboard', '/admin/users': 'User Management', '/admin/academics': 'Academic Setup',
+  '/admin': 'Admin Dashboard', '/admin/users': 'User Management', '/admin/office': 'Office Management', '/admin/academics': 'Academic Setup',
   '/admin/attendance': 'Attendance Reports', '/admin/exams': 'Exam Management', '/admin/finance': 'Finance Management',
   '/admin/hostel': 'Hostel Management', '/admin/library': 'Library Management', '/admin/transport': 'Transport Management',
   '/admin/inventory': 'Inventory Management', '/admin/reports': 'Reports & Analytics', '/admin/settings': 'System Settings',

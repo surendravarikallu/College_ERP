@@ -1,5 +1,12 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
+import { 
+  CreditCard, ArrowRight, User, Settings, LogOut, LayoutDashboard, 
+  Database, ClipboardList, BookOpen, GraduationCap, Users, History, 
+  FileText, CheckCircle2, Clock, AlertTriangle, Wallet, Activity, 
+  TrendingUp, ArrowUpRight 
+} from 'lucide-react';
+import { apiClient } from './api/client';
 import { ThemeProvider } from "./components/theme-provider";
 
 import LandingPage from './pages/landing/LandingPage';
@@ -14,7 +21,8 @@ import HostelManagement from './pages/admin/HostelManagement';
 import LibraryManagement from './pages/admin/LibraryManagement';
 import TransportManagement from './pages/admin/TransportManagement';
 import InventoryManagement from './pages/admin/InventoryManagement';
-import FinanceManagement from './pages/admin/FinanceManagement';
+import FeeCollectionPage from './pages/admin/FeeCollectionPage';
+import OfficeManagement from './pages/admin/OfficeManagement';
 
 // New Pages Added in SP-05
 import { AdminExamsPage } from './pages/admin/AdminExamsPage';
@@ -55,7 +63,7 @@ import ECLogin from './examcell/pages/login';
 import ECAutonomous from './examcell/pages/autonomous';
 const App = () => {
   return (
-    <ThemeProvider defaultTheme="system" storageKey="erp-theme">
+    <ThemeProvider defaultTheme="light">
       <BrowserRouter>
         <Routes>
           {/* Public */}
@@ -70,13 +78,14 @@ const App = () => {
           }>
             <Route index element={<AdminDashboardIndex />} />
             <Route path="users" element={<UserManagement />} />
+            <Route path="office" element={<OfficeManagement />} />
             <Route path="academics" element={<AcademicSetup />} />
             <Route path="attendance" element={<AdminAttendancePage />} />
             <Route path="audit-logs" element={<AuditLogPage />} />
             <Route path="exams" element={<AdminExamsPage />} />
             <Route path="hr" element={<HRDashboard />} />
             <Route path="hr/payslip/:payslipId" element={<PayslipView />} />
-            <Route path="finance" element={<FinanceManagement />} />
+            <Route path="finance" element={<FeeCollectionPage />} />
             <Route path="hostel" element={<HostelManagement />} />
             <Route path="library" element={<LibraryManagement />} />
             <Route path="transport" element={<TransportManagement />} />
@@ -180,12 +189,7 @@ const FacultyDashboardIndex = () => {
 };
 
 // Temporary content wrappers — will render existing dashboards in new shell
-import { apiClient } from './api/client';
-import { useState, useEffect } from 'react';
-import {
-  Users, GraduationCap, Wallet, Activity, TrendingUp,
-  ArrowUpRight, CheckCircle2, Clock, AlertTriangle
-} from 'lucide-react';
+
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
@@ -208,7 +212,7 @@ const AdminDashboardContent = () => {
     fetch();
   }, []);
 
-  if (loading) return <div className="flex justify-center py-16"><div className="w-8 h-8 border-2 border-slate-700 border-t-indigo-500 rounded-full animate-spin" /></div>;
+  if (loading) return <div className="flex justify-center py-16"><div className="w-8 h-8 border-2 border-slate-300 border-t-indigo-500 rounded-full animate-spin" /></div>;
 
   const stats = data || {};
 
@@ -238,12 +242,12 @@ const AdminDashboardContent = () => {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Total Students', value: stats.totalStudents || '—', icon: <Users className="w-5 h-5" />, color: 'text-indigo-400', bg: 'bg-indigo-500/10', border: 'border-l-indigo-500' },
-          { label: 'Total Faculty', value: stats.totalFaculty || '—', icon: <GraduationCap className="w-5 h-5" />, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-l-emerald-500' },
+          { label: 'Total Students', value: stats.totalStudents || '—', icon: <Users className="w-5 h-5" />, color: 'text-indigo-600', bg: 'bg-indigo-500/10', border: 'border-l-indigo-500' },
+          { label: 'Total Faculty', value: stats.totalFaculty || '—', icon: <GraduationCap className="w-5 h-5" />, color: 'text-emerald-600', bg: 'bg-emerald-500/10', border: 'border-l-emerald-500' },
           { label: 'Attendance Rate', value: `${stats.attendanceRate || 93}%`, icon: <Activity className="w-5 h-5" />, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-l-blue-500' },
-          { label: 'Fee Collection', value: `₹${((stats.feeCollection || 2450000) / 100000).toFixed(1)}L`, icon: <Wallet className="w-5 h-5" />, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-l-amber-500' },
+          { label: 'Fee Collection', value: `₹${((stats.feeCollection || 2450000) / 100000).toFixed(1)}L`, icon: <Wallet className="w-5 h-5" />, color: 'text-amber-600', bg: 'bg-amber-500/10', border: 'border-l-amber-500' },
         ].map(s => (
-          <div key={s.label} className={`bg-slate-900 border border-slate-800 border-l-4 ${s.border} rounded-xl p-5`}>
+          <div key={s.label} className={`bg-white border border-slate-200 border-l-4 ${s.border} rounded-xl p-5`}>
             <div className="flex items-center justify-between mb-3">
               <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{s.label}</p>
               <div className={`p-2 rounded-lg ${s.bg} ${s.color}`}>{s.icon}</div>
@@ -255,7 +259,7 @@ const AdminDashboardContent = () => {
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+        <div className="bg-white border border-slate-200 rounded-xl p-5">
           <h3 className="text-sm font-semibold mb-4">Attendance Trend</h3>
           <ResponsiveContainer width="100%" height={250}>
             <AreaChart data={attendanceTrend}>
@@ -273,7 +277,7 @@ const AdminDashboardContent = () => {
             </AreaChart>
           </ResponsiveContainer>
         </div>
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+        <div className="bg-white border border-slate-200 rounded-xl p-5">
           <h3 className="text-sm font-semibold mb-4">Fee Collection Trend (₹)</h3>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={financeTrend}>
@@ -292,12 +296,12 @@ const AdminDashboardContent = () => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { label: 'Active Sessions', value: stats.activeSessions || 0, icon: <Clock className="w-4 h-4 text-blue-400" /> },
-          { label: 'Pending Fees', value: stats.pendingFees || 0, icon: <AlertTriangle className="w-4 h-4 text-amber-400" /> },
-          { label: 'Exams Scheduled', value: stats.examsScheduled || 0, icon: <CheckCircle2 className="w-4 h-4 text-emerald-400" /> },
-          { label: 'Growth Rate', value: `+${stats.growthRate || 12}%`, icon: <TrendingUp className="w-4 h-4 text-indigo-400" /> },
+          { label: 'Pending Fees', value: stats.pendingFees || 0, icon: <AlertTriangle className="w-4 h-4 text-amber-600" /> },
+          { label: 'Exams Scheduled', value: stats.examsScheduled || 0, icon: <CheckCircle2 className="w-4 h-4 text-emerald-600" /> },
+          { label: 'Growth Rate', value: `+${stats.growthRate || 12}%`, icon: <TrendingUp className="w-4 h-4 text-indigo-600" /> },
         ].map(s => (
-          <div key={s.label} className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex items-center gap-3">
-            <div className="p-2 bg-slate-800 rounded-lg">{s.icon}</div>
+          <div key={s.label} className="bg-white border border-slate-200 rounded-xl p-4 flex items-center gap-3">
+            <div className="p-2 bg-slate-50 rounded-lg">{s.icon}</div>
             <div>
               <p className="text-xs text-slate-500 uppercase tracking-wide">{s.label}</p>
               <p className="text-lg font-bold">{s.value}</p>
@@ -324,7 +328,7 @@ const StudentDashboardContent = () => {
     fetch();
   }, []);
 
-  if (loading) return <div className="flex justify-center py-16"><div className="w-8 h-8 border-2 border-slate-700 border-t-indigo-500 rounded-full animate-spin" /></div>;
+  if (loading) return <div className="flex justify-center py-16"><div className="w-8 h-8 border-2 border-slate-300 border-t-indigo-500 rounded-full animate-spin" /></div>;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -340,17 +344,37 @@ const StudentDashboardContent = () => {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Attendance', value: `${data?.attendancePct || 0}%`, border: 'border-l-indigo-500', color: (data?.attendancePct || 0) >= 75 ? 'text-emerald-400' : 'text-red-400' },
+          { label: 'Attendance', value: `${data?.attendancePct || 0}%`, border: 'border-l-indigo-500', color: (data?.attendancePct || 0) >= 75 ? 'text-emerald-600' : 'text-red-400' },
           { label: 'Due Fees', value: `₹${(data?.finance?.due || 0).toLocaleString()}`, border: 'border-l-red-500', color: 'text-red-400' },
           { label: 'Classes Today', value: data?.classesToday || 0, border: 'border-l-blue-500', color: '' },
           { label: 'CGPA', value: data?.cgpa || '—', border: 'border-l-amber-500', color: '' },
         ].map(s => (
-          <div key={s.label} className={`bg-slate-900 border border-slate-800 border-l-4 ${s.border} rounded-xl p-5`}>
+          <div key={s.label} className={`bg-white border border-slate-200 border-l-4 ${s.border} rounded-xl p-5 shadow-sm`}>
             <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{s.label}</p>
             <p className={`text-2xl font-bold mt-2 ${s.color}`}>{s.value}</p>
           </div>
         ))}
       </div>
+
+      {data?.finance?.due > 0 && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-red-50 text-red-500 rounded-xl border border-red-100">
+              <CreditCard className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-bold text-slate-800">Outstanding Balance</h3>
+              <p className="text-sm text-slate-600">You have pending fees that require your attention.</p>
+            </div>
+          </div>
+          <Link 
+            to="/student/fees" 
+            className="w-full md:w-auto px-6 py-3 bg-[#004b93] hover:bg-[#003d7a] text-white rounded-xl font-semibold shadow-lg shadow-blue-900/10 transition-all flex items-center justify-center gap-2"
+          >
+            Pay Now <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+      )}
     </div>
   );
 };
@@ -370,7 +394,7 @@ const FacultyDashboardContent = () => {
     fetch();
   }, []);
 
-  if (loading) return <div className="flex justify-center py-16"><div className="w-8 h-8 border-2 border-slate-700 border-t-indigo-500 rounded-full animate-spin" /></div>;
+  if (loading) return <div className="flex justify-center py-16"><div className="w-8 h-8 border-2 border-slate-300 border-t-indigo-500 rounded-full animate-spin" /></div>;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -391,7 +415,7 @@ const FacultyDashboardContent = () => {
           { label: 'Pending Marks', value: data?.pendingMarks || 0, border: 'border-l-amber-500' },
           { label: 'Avg. Attendance', value: `${data?.avgAttendance || 0}%`, border: 'border-l-emerald-500' },
         ].map(s => (
-          <div key={s.label} className={`bg-slate-900 border border-slate-800 border-l-4 ${s.border} rounded-xl p-5`}>
+          <div key={s.label} className={`bg-white border border-slate-200 border-l-4 ${s.border} rounded-xl p-5`}>
             <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{s.label}</p>
             <p className="text-2xl font-bold mt-2">{s.value}</p>
           </div>

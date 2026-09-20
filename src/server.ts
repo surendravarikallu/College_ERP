@@ -28,6 +28,7 @@ import hostelRouter from './domain/hostel/hostel.router';
 import libraryRouter from './domain/library/library.router';
 import { adminRouter } from './domain/admin/admin.routes';
 import { hrRouter } from './domain/hr/hr.routes';
+import officeRouter from './domain/office/office.routes';
 
 const app = express();
 const httpServer = createServer(app);
@@ -98,6 +99,7 @@ app.use('/api/v1/hostel', hostelRouter);
 app.use('/api/v1/library', libraryRouter);
 app.use('/api/v1/admin', adminRouter);
 app.use('/api/v1/hr', hrRouter);
+app.use('/api/v1/office', officeRouter);
 
 // Mount exam cell routes if present
 try {

@@ -72,8 +72,8 @@ const NotificationBell = () => {
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'ATTENDANCE_ALERT': return 'text-amber-400';
-      case 'EXAM_RESULT': case 'MARKS_PUBLISHED': return 'text-emerald-400';
+      case 'ATTENDANCE_ALERT': return 'text-amber-600';
+      case 'EXAM_RESULT': case 'MARKS_PUBLISHED': return 'text-emerald-600';
       case 'FEE_REMINDER': return 'text-red-400';
       default: return 'text-blue-400';
     }
@@ -93,10 +93,10 @@ const NotificationBell = () => {
     <div className="relative" ref={ref}>
       <button
         onClick={handleToggle}
-        className="relative p-2 rounded-lg hover:bg-slate-800 transition-colors"
+        className="relative p-2 rounded-lg hover:bg-slate-100 transition-colors"
         title="Notifications"
       >
-        <Bell className="w-5 h-5 text-slate-400" />
+        <Bell className="w-5 h-5 text-slate-600" />
         {unreadCount > 0 && (
           <span className="absolute -top-0.5 -right-0.5 w-4.5 h-4.5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center min-w-[18px] px-1">
             {unreadCount > 99 ? '99+' : unreadCount}
@@ -105,14 +105,14 @@ const NotificationBell = () => {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl shadow-black/60 z-50 overflow-hidden">
+        <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-xl shadow-2xl shadow-black/60 z-50 overflow-hidden">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800">
-            <h3 className="text-sm font-semibold text-white">Notifications</h3>
+          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
+            <h3 className="text-sm font-semibold text-slate-800">Notifications</h3>
             {unreadCount > 0 && (
               <button
                 onClick={markAllAsRead}
-                className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors"
+                className="text-xs text-indigo-600 hover:text-indigo-300 flex items-center gap-1 transition-colors"
               >
                 <CheckCheck className="w-3 h-3" /> Mark all read
               </button>
@@ -123,7 +123,7 @@ const NotificationBell = () => {
           <div className="max-h-80 overflow-y-auto">
             {loading ? (
               <div className="flex justify-center py-8">
-                <div className="w-5 h-5 border-2 border-slate-700 border-t-indigo-500 rounded-full animate-spin" />
+                <div className="w-5 h-5 border-2 border-slate-300 border-t-indigo-500 rounded-full animate-spin" />
               </div>
             ) : notifications.length === 0 ? (
               <div className="py-8 text-center text-sm text-slate-500">
@@ -133,7 +133,7 @@ const NotificationBell = () => {
               notifications.map(n => (
                 <div
                   key={n.id}
-                  className={`px-4 py-3 border-b border-slate-800/50 hover:bg-slate-800/50 cursor-pointer transition-colors ${!n.isRead ? 'bg-indigo-500/5' : ''}`}
+                  className={`px-4 py-3 border-b border-slate-200/50 hover:bg-slate-100 cursor-pointer transition-colors ${!n.isRead ? 'bg-indigo-500/5' : ''}`}
                   onClick={() => !n.isRead && markAsRead(n.id)}
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -141,7 +141,7 @@ const NotificationBell = () => {
                       <p className={`text-xs font-semibold ${getTypeColor(n.type)} mb-0.5`}>
                         {n.title}
                       </p>
-                      <p className="text-xs text-slate-400 line-clamp-2">{n.message}</p>
+                      <p className="text-xs text-slate-600 line-clamp-2">{n.message}</p>
                       <p className="text-[10px] text-slate-600 mt-1">{timeAgo(n.createdAt)}</p>
                     </div>
                     {!n.isRead && (

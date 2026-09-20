@@ -80,19 +80,19 @@ function DataTable<T extends Record<string, any>>({
             placeholder={searchPlaceholder}
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1); }}
-            className="w-full pl-9 pr-4 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+            className="w-full pl-9 pr-4 py-2 bg-[#004b93] text-white border border-slate-300 rounded-lg text-sm text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
           />
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-xl border border-slate-800">
+      <div className="overflow-x-auto rounded-xl border border-slate-200">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-slate-900 border-b border-slate-800">
+            <tr className="bg-white border-b border-slate-200">
               {columns.map(col => (
                 <th
                   key={col.key}
-                  className={`px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider ${col.sortable !== false ? 'cursor-pointer hover:text-slate-200 select-none' : ''} ${col.className || ''}`}
+                  className={`px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider ${col.sortable !== false ? 'cursor-pointer hover:text-slate-200 select-none' : ''} ${col.className || ''}`}
                   onClick={() => col.sortable !== false && handleSort(col.key)}
                 >
                   <div className="flex items-center gap-1">
@@ -114,9 +114,9 @@ function DataTable<T extends Record<string, any>>({
               </tr>
             ) : (
               paginated.map((row, idx) => (
-                <tr key={idx} className="hover:bg-slate-900/50 transition-colors">
+                <tr key={idx} className="hover:bg-white transition-colors">
                   {columns.map(col => (
-                    <td key={col.key} className={`px-4 py-3 text-slate-300 ${col.className || ''}`}>
+                    <td key={col.key} className={`px-4 py-3 text-slate-700 ${col.className || ''}`}>
                       {col.render ? col.render(row) : row[col.key] ?? '—'}
                     </td>
                   ))}
@@ -136,17 +136,17 @@ function DataTable<T extends Record<string, any>>({
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="p-1.5 rounded-lg hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="p-1.5 rounded-lg hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="px-3 py-1 bg-slate-800 rounded-lg font-medium text-slate-300">
+            <span className="px-3 py-1 bg-slate-50 rounded-lg font-medium text-slate-700">
               {page} / {totalPages}
             </span>
             <button
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="p-1.5 rounded-lg hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="p-1.5 rounded-lg hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
