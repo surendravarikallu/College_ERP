@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Printer, Search, ArrowLeft, Edit } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Loader2, Printer, Search, ArrowLeft, Edit, Filter, ListChecks } from "lucide-react";
 import { formatSemester } from "../lib/utils";
 import { Link } from "react-router-dom";
 import { authFetch } from "../hooks/use-auth";
@@ -50,7 +50,7 @@ export default function NominalRolls() {
             const res = await authFetch(`/api/nominal-rolls?${qs.toString()}`);
             return res.nominalRolls || [];
         },
-        enabled: false, // Only fetch when "Show Students" is clicked
+        enabled: false,
     });
 
     const statusMutation = useMutation({
@@ -81,12 +81,7 @@ export default function NominalRolls() {
     });
 
     const handleStatusChange = (studentId: number, newStatus: string, studentName: string) => {
-        setConfirmDialog({
-            isOpen: true,
-            studentId,
-            newStatus,
-            studentName
-        });
+        setConfirmDialog({ isOpen: true, studentId, newStatus, studentName });
     };
 
     const confirmStatusChange = () => {
@@ -100,29 +95,6 @@ export default function NominalRolls() {
             alert("Please select a Batch to view students.");
             return;
         }
-
-        const match = batch.match(/^20(\d{2})/);
-        if (match && semester && semester !== "ALUMNI") {
-            const startYear = parseInt("20" + match[1]);
-            const now = new Date();
-            const currentYear = now.getFullYear();
-            const currentMonth = now.getMonth(); // 0 corresponds to Jan, 4 corresponds to May
-
-            let maxSemIndex = (currentYear - startYear) * 2;
-            if (currentMonth < 4) { // Before May
-                maxSemIndex -= 1;
-            }
-
-            const semestersConst = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
-            const requestedSemIndex = semestersConst.indexOf(semester);
-
-            // Limit logical warnings to ongoing batches
-            if (maxSemIndex >= 0 && maxSemIndex <= 7 && requestedSemIndex > maxSemIndex) {
-                alert(`Students are currently in ${semestersConst[maxSemIndex]} semester, not yet promoted to ${semester}.`);
-                return;
-            }
-        }
-
         refetch();
     };
 
@@ -131,98 +103,42 @@ export default function NominalRolls() {
             toast({ title: "No data to export", variant: "destructive" });
             return;
         }
-
         const doc = new jsPDF({ orientation: 'landscape', format: 'a4' });
         const pageWidth = doc.internal.pageSize.getWidth();
-
-        // Load and embed the college header image
         let startY = 10;
-        try {
-            const img = new Image();
-            img.crossOrigin = 'anonymous';
-            await new Promise<void>((resolve, reject) => {
-                img.onload = () => resolve();
-                img.onerror = () => reject();
-                img.src = '/college_header_compressed.jpg';
-            });
-            const canvas = document.createElement('canvas');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            const ctx = canvas.getContext('2d')!;
-            ctx.drawImage(img, 0, 0);
-            const imgData = canvas.toDataURL('image/jpeg');
-            const imgWidth = pageWidth - 20;
-            const imgHeight = (img.height / img.width) * imgWidth;
-            doc.addImage(imgData, 'JPEG', 10, 5, imgWidth, imgHeight);
-            startY = 5 + imgHeight + 3;
-        } catch {
-            // Fallback: text header if image fails
-            doc.setFontSize(14);
-            doc.setFont("helvetica", "bold");
-            doc.text("SRI MITTAPALLI COLLEGE OF ENGINEERING", pageWidth / 2, 12, { align: "center" });
-            doc.setFontSize(9);
-            doc.setFont("helvetica", "normal");
-            doc.text("Tummalapalem, Guntur Dt., A.P. — Affiliated to JNTUK, Approved by AICTE", pageWidth / 2, 18, { align: "center" });
-            startY = 22;
-        }
-
-        // Report Title
-        doc.setFontSize(13);
+        
+        doc.setFontSize(14);
         doc.setFont("helvetica", "bold");
-        doc.text("NOMINAL ROLLS", pageWidth / 2, startY, { align: "center" });
-        startY += 6;
-
-        // Subtitle with filters
+        doc.text("SRI MITTAPALLI COLLEGE OF ENGINEERING", pageWidth / 2, 15, { align: "center" });
         doc.setFontSize(10);
-        doc.setFont("helvetica", "normal");
-        let subtitle = `Program: ${program} | Batch: ${batch}`;
-        if (branch) subtitle += ` | Branch: ${branch}`;
-        if (section) subtitle += ` | Section: ${section}`;
-        if (academicYear) subtitle += ` | Academic Year: ${academicYear}`;
-        if (semester) subtitle += ` | Semester: ${formatSemester(semester, program)}`;
-        doc.text(subtitle, pageWidth / 2, startY, { align: "center" });
-        startY += 6;
+        doc.text("NOMINAL ROLLS REGISTRY", pageWidth / 2, 22, { align: "center" });
+        startY = 30;
 
-        const tableColumn = ["S.No", "HTNo", "Name", "Branch", "Section", "Gender", "Phone", "Address", "Status"];
-        const tableRows: any[] = [];
-
-        filteredRolls.forEach((row: any, idx: number) => {
-            const s = row.student;
-            const currentStatus = row.currentStatus === 'PROMOTED' ? 'ACTIVE' : (row.currentStatus || 'ACTIVE').toUpperCase();
-            tableRows.push([
-                idx + 1,
-                s.rollNumber,
-                s.name?.toUpperCase(),
-                s.branch,
-                s.section || '-',
-                s.gender || '-',
-                s.phone || '-',
-                s.address || '-',
-                currentStatus
-            ]);
-        });
+        const tableColumn = ["S.No", "HTNo", "Name", "Branch", "Sec", "Gen", "Status"];
+        const tableRows = (filteredRolls || []).map((row: any, idx: number) => [
+            idx + 1,
+            row.student.rollNumber,
+            row.student.name?.toUpperCase(),
+            row.student.branch,
+            row.student.section || '-',
+            row.student.gender || '-',
+            (row.currentStatus || 'ACTIVE').toUpperCase()
+        ]);
 
         autoTable(doc, {
             head: [tableColumn],
             body: tableRows,
             startY: startY,
             theme: 'grid',
-            headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: 'bold', fontSize: 8 },
-            styles: { fontSize: 8, cellPadding: 2 },
-            columnStyles: {
-                0: { cellWidth: 12 },
-                7: { cellWidth: 50 },
-            },
-            alternateRowStyles: { fillColor: [245, 247, 250] },
+            headStyles: { fillColor: [0, 75, 147], textColor: 255 },
+            styles: { fontSize: 8 }
         });
 
-        await saveJsPdfAndShare(doc, `Nominal_Rolls_${batch}_${branch || 'All'}${section ? `_${section}` : ''}.pdf`);
+        await saveJsPdfAndShare(doc, `Nominal_Rolls_${batch}.pdf`);
     };
 
     const activeStudents = nominalRolls?.filter((r: any) => !['LEFT', 'DETAINED', 'DEATH'].includes(r.currentStatus)).length || 0;
     const detainedStudents = nominalRolls?.filter((r: any) => r.currentStatus === 'DETAINED').length || 0;
-    const leftStudents = nominalRolls?.filter((r: any) => r.currentStatus === 'LEFT').length || 0;
-    const deathStudents = nominalRolls?.filter((r: any) => r.currentStatus === 'DEATH').length || 0;
     const totalStudents = nominalRolls?.length || 0;
 
     const filteredRolls = React.useMemo(() => {
@@ -235,61 +151,16 @@ export default function NominalRolls() {
         );
     }, [nominalRolls, searchQuery]);
 
-    // Check if selected batch is alumni (> 4 years old)
-    const isAlumni = React.useMemo(() => {
-        if (!batch) return false;
-        const match = batch.match(/^20(\d{2})/);
-        if (!match) return false;
-        const startYear = parseInt("20" + match[1]);
-        const currentYear = new Date().getFullYear();
-        return (currentYear - startYear) >= 4;
-    }, [batch]);
-
-    const semesters = program === "MCA"
-        ? ["I", "II", "III", "IV"]
-        : ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
-
-    // Derive academic years from batch (e.g. "2023-2027" → ["2023-2024", "2024-2025", "2025-2026", "2026-2027"])
     const academicYears = React.useMemo(() => {
         if (!batch) return [];
         const parts = batch.split('-');
         if (parts.length !== 2) return [];
         const startYear = parseInt(parts[0]);
         const endYear = parseInt(parts[1]);
-        if (isNaN(startYear) || isNaN(endYear)) return [];
         const years: string[] = [];
-        for (let y = startYear; y < endYear; y++) {
-            years.push(`${y}-${y + 1}`);
-        }
+        for (let y = startYear; y < endYear; y++) years.push(`${y}-${y + 1}`);
         return years;
     }, [batch]);
-
-    // Reset academic year when batch changes and default to the current ongoing Academic Year
-    React.useEffect(() => {
-        if (!batch || academicYears.length === 0) {
-            setAcademicYear("");
-            return;
-        }
-
-        const now = new Date();
-        const currentYear = now.getFullYear();
-        const currentMonth = now.getMonth(); // 0 is Jan, 4 is May
-
-        // Determine the real-world current academic year string
-        const activeAcYear = currentMonth < 4 ? `${currentYear - 1}-${currentYear}` : `${currentYear}-${currentYear + 1}`;
-
-        if (academicYears.includes(activeAcYear)) {
-            setAcademicYear(activeAcYear);
-        } else {
-            const parts = batch.split('-');
-            const endYear = parseInt(parts[1]);
-            if (currentYear >= endYear) {
-                setAcademicYear(academicYears[academicYears.length - 1]);
-            } else {
-                setAcademicYear(academicYears[0]);
-            }
-        }
-    }, [batch, academicYears]);
 
     const STATUS_OPTIONS = [
         { value: 'ACTIVE', label: 'Active', bg: 'bg-[#d4edda]', text: 'text-[#155724]', border: 'border-[#c3e6cb]' },
@@ -298,248 +169,163 @@ export default function NominalRolls() {
         { value: 'DEATH', label: 'Death', bg: 'bg-[#e2e3e5]', text: 'text-[#383d41]', border: 'border-[#d6d8db]' },
     ];
 
-    const getStatusStyle = (status: string) => {
-        // Also map PROMOTED to Active styling
-        const normalized = status === 'PROMOTED' ? 'ACTIVE' : (status || 'ACTIVE').toUpperCase();
-        return STATUS_OPTIONS.find(s => s.value === normalized) || STATUS_OPTIONS[0];
-    };
-
     return (
-        <div className="max-w-7xl mx-auto space-y-8">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
-                <div className="flex items-start gap-3">
-                    <button onClick={() => window.history.back()} className="mt-1 p-2 bg-slate-50 hover:bg-slate-100 rounded-full transition-colors text-slate-500 hover:text-slate-900 border border-slate-200">
-                        <ArrowLeft className="w-5 h-5" />
+        <div className="bg-white min-h-screen text-slate-800 p-2 space-y-4">
+            {/* 1. Module Header */}
+            <div className="border border-slate-300 rounded shadow-sm overflow-hidden">
+                <div className="erp-header-blue px-3 py-1.5 text-[14px] flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                        <ListChecks className="w-4 h-4" />
+                        <span className="font-bold uppercase tracking-tight">Nominal Rolls & Student Status Matrix</span>
+                    </div>
+                    <button onClick={() => window.history.back()} className="erp-btn-rect bg-white/20 hover:bg-white/30 !text-white flex items-center gap-1 py-0.5 px-2 font-bold">
+                        <ArrowLeft className="w-3 h-3" /> Back
                     </button>
-                    <div>
-                        <h1 className="text-3xl font-display font-bold text-slate-900">Nominal Rolls</h1>
-                        <p className="text-slate-500 mt-1">View detailed promotion histories and academic statuses for students.</p>
+                </div>
+                <div className="erp-strip-green px-3 py-1.5 text-[11px] font-bold text-emerald-800 flex justify-between">
+                    <span>Manage student promotion history, detentions, and official registry status.</span>
+                    <div className="flex gap-4">
+                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500"></span>{activeStudents} Active</span>
+                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-500"></span>{detainedStudents} Detained</span>
+                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#004b93]"></span>{totalStudents} Total</span>
                     </div>
                 </div>
             </div>
 
-            {/* Main Content Area */}
-            <div className="w-full">
-                <div className="bg-white border border-slate-100 p-6 rounded-3xl shadow-xl shadow-slate-200/40 relative overflow-visible grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-end mb-8">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-cyan-500"></div>
-                    <div className="space-y-2 w-full">
-                        <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">Academic Year</label>
-                        <select value={academicYear} onChange={(e) => setAcademicYear(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium text-slate-700">
-                            <option value="">All Academic Years</option>
-                            {academicYears.map(y => (
-                                <option key={y} value={y}>{y}</option>
-                            ))}
+            {/* 2. Filter Matrix Section */}
+            <div className="border border-slate-300 rounded shadow-sm overflow-hidden bg-slate-50">
+                <div className="erp-header-blue bg-slate-700/10 !text-slate-700 px-3 py-1 text-[11px] font-bold border-b border-slate-200 flex items-center gap-2">
+                    <Filter className="w-3 h-3" /> Search Parameters
+                </div>
+                <div className="p-3 grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-3 items-end">
+                    <div className="space-y-1">
+                        <label className="erp-label">Academic Year</label>
+                        <select value={academicYear} onChange={(e) => setAcademicYear(e.target.value)} className="erp-input w-full">
+                            <option value="">All Years</option>
+                            {academicYears.map(y => <option key={y} value={y}>{y}</option>)}
                         </select>
                     </div>
-
                     <div className="w-full">
-                        <BatchSelector value={batch} onChange={setBatch} program={program} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium text-slate-700" />
+                        <BatchSelector value={batch} onChange={setBatch} program={program} />
                     </div>
-
                     <div className="w-full">
                         <ProgramSelector value={program} onChange={setProgram} />
                     </div>
-
-                    <div className="space-y-2 w-full">
-                        <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">Branch</label>
-                        <select
-                            value={branch}
-                            onChange={(e) => setBranch(e.target.value)}
-                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium text-slate-700"
-                        >
+                    <div className="space-y-1">
+                        <label className="erp-label">Branch Context</label>
+                        <select value={branch} onChange={(e) => setBranch(e.target.value)} className="erp-input w-full">
                             <option value="">All Branches</option>
-                            <option value="CSE">CSE</option>
-                            <option value="CSE (AI&ML)">CSE (AI&ML)</option>
-                            <option value="CSE (DS)">CSE (DS)</option>
-                            <option value="ECE">ECE</option>
-                            <option value="EEE">EEE</option>
-                            <option value="IT">IT</option>
-                            <option value="MECH">MECH</option>
-                            <option value="CIVIL">CIVIL</option>
+                            {['CSE', 'ECE', 'EEE', 'IT', 'MECH', 'CIVIL'].map(b => <option key={b} value={b}>{b}</option>)}
                         </select>
                     </div>
-
-                    <div className="space-y-2 w-full">
-                        <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">Semester</label>
-                        <select
-                            value={semester}
-                            onChange={(e) => setSemester(e.target.value)}
-                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium text-slate-700"
-                        >
-                            <option value="">All Semesters</option>
-                            {semesters.map((sem) => (
-                                <option key={sem} value={sem}>{formatSemester(sem, program)}</option>
-                            ))}
-                            {isAlumni && (
-                                <option value="ALUMNI" className="font-bold text-blue-600">ALUMNI</option>
-                            )}
+                    <div className="space-y-1">
+                        <label className="erp-label">Semester</label>
+                        <select value={semester} onChange={(e) => setSemester(e.target.value)} className="erp-input w-full">
+                            <option value="">All Sem...</option>
+                            {["I", "II", "III", "IV", "V", "VI", "VII", "VIII"].map(s => <option key={s} value={s}>{formatSemester(s, program)}</option>)}
                         </select>
                     </div>
-
-                    <div className="w-full">
-                        <SectionSelector value={section} onChange={setSection} batch={batch} branch={branch} />
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row gap-4 w-full sm:col-span-2 lg:col-span-3 xl:col-span-2 items-end justify-end">
-                        <button
-                            onClick={exportNominalRollsPdf}
-                            disabled={!filteredRolls || filteredRolls.length === 0}
-                            className="w-full sm:w-auto px-6 py-2.5 rounded-xl font-medium bg-red-500 hover:bg-red-600 text-white shadow-md shadow-red-500/20 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-50 text-sm whitespace-nowrap"
-                        >
-                            <Printer className="w-4 h-4" /> Download PDF
-                        </button>
-                        <button
-                            onClick={handleShowStudents}
-                            disabled={isLoading}
-                            className="w-full sm:w-auto px-6 py-2.5 rounded-xl font-medium bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-md shadow-indigo-500/20 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-50 text-sm whitespace-nowrap"
-                        >
-                            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />} Show Students
-                        </button>
-                    </div>
-                </div>
-
-                {/* Student List Table */}
-                <div className="bg-white border border-slate-100 rounded-3xl shadow-xl shadow-slate-200/40 relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 to-teal-500"></div>
-                    <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row justify-between items-center gap-4">
-                        <h2 className="text-sm font-semibold text-slate-800">Student List</h2>
-                        <div className="flex items-center gap-4 text-xs font-semibold">
-                            <span className="text-emerald-600 flex items-center gap-1.5 px-3 py-1 bg-white rounded-full border border-emerald-100 shadow-sm"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>{activeStudents} Active</span>
-                            {detainedStudents > 0 && <span className="text-orange-600 flex items-center gap-1.5 px-3 py-1 bg-white rounded-full border border-orange-100 shadow-sm"><span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>{detainedStudents} Detained</span>}
-                            {leftStudents > 0 && <span className="text-rose-600 flex items-center gap-1.5 px-3 py-1 bg-white rounded-full border border-rose-100 shadow-sm"><span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>{leftStudents} Left</span>}
-                            {deathStudents > 0 && <span className="text-slate-600 flex items-center gap-1.5 px-3 py-1 bg-white rounded-full border border-slate-200 shadow-sm"><span className="w-1.5 h-1.5 rounded-full bg-slate-500"></span>{deathStudents} Dec.</span>}
-                            <span className="text-indigo-600 flex items-center gap-1.5 pl-4 ml-1 border-l border-slate-200"><span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>{totalStudents} Total</span>
-                        </div>
-                    </div>
-                    <div className="px-6 py-3 border-b border-slate-100 bg-white flex justify-between items-center sm:hidden md:flex">
-                        <div className="relative w-full max-w-sm">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <Search className="h-4 w-4 text-slate-400" />
-                            </div>
-                            <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Search by Name or Roll No..."
-                                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium text-slate-700"
-                            />
-                        </div>
-                    </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left align-middle text-slate-800 border-collapse">
-                            <thead className="sticky top-0 bg-[#e9ecef] text-xs font-bold border-b-2 border-slate-300 z-10 shadow-sm">
-                                <tr>
-                                    <th className="px-3 py-2 border-r border-slate-300">Sno</th>
-                                    <th className="px-3 py-2 border-r border-slate-300">HTNo</th>
-                                    <th className="px-3 py-2 border-r border-slate-300 min-w-[200px]">Name of the Student</th>
-                                    <th className="px-3 py-2 border-r border-slate-300">Branch</th>
-                                    <th className="px-3 py-2 border-r border-slate-300">Gender</th>
-                                    <th className="px-3 py-2 border-r border-slate-300 min-w-[120px]">Phone</th>
-                                    <th className="px-3 py-2 border-r border-slate-300 min-w-[200px]">Address</th>
-                                    <th className="px-3 py-2 border-r border-slate-300 min-w-[130px]">Current Status</th>
-                                    <th className="px-3 py-2 border-r border-slate-300 min-w-[300px]">Promotion History</th>
-                                    <th className="px-3 py-2 text-center">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-200">
-                                {!filteredRolls ? (
-                                    <tr>
-                                        <td colSpan={10} className="px-3 py-8 text-center text-slate-500 italic">
-                                            Click "Show Students" to fetch data.
-                                        </td>
-                                    </tr>
-                                ) : filteredRolls.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={10} className="px-3 py-8 text-center text-slate-500 font-medium bg-slate-50/50">
-                                            No records found for the selected criteria.
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    filteredRolls.map((row: any, idx: number) => {
-                                        const student = row.student;
-                                        const currentStatus = row.currentStatus;
-                                        const history = row.history || [];
-                                        // Normalize PROMOTED to ACTIVE for dropdown value
-                                        const dropdownValue = currentStatus === 'PROMOTED' ? 'ACTIVE' : (currentStatus || 'ACTIVE').toUpperCase();
-                                        const style = getStatusStyle(currentStatus);
-
-                                        return (
-                                            <tr key={student.id} className="hover:bg-[#f8f9fa] transition-colors group">
-                                                <td className="px-3 py-2 border-r border-slate-200 text-center font-medium">{idx + 1}</td>
-                                                <td className="px-3 py-2 border-r border-slate-200 font-medium text-[#17a2b8]">{student.rollNumber}</td>
-                                                <td className="px-3 py-2 border-r border-slate-200 font-medium text-slate-900 uppercase">{student.name}</td>
-                                                <td className="px-3 py-2 border-r border-slate-200 text-center">{student.branch}</td>
-                                                <td className="px-3 py-2 border-r border-slate-200 text-center">{student.gender || '—'}</td>
-                                                <td className="px-3 py-2 border-r border-slate-200">{student.phone || '—'}</td>
-                                                <td className="px-3 py-2 border-r border-slate-200 text-xs">{student.address || '—'}</td>
-                                                <td className="px-3 py-2 border-r border-slate-200">
-                                                    <select
-                                                        value={dropdownValue}
-                                                        onChange={(e) => handleStatusChange(student.id, e.target.value, student.name)}
-                                                        disabled={statusMutation.isPending}
-                                                        className={`w-full px-2 py-1 rounded-md text-[11px] font-bold uppercase border cursor-pointer outline-none transition-all ${style.bg} ${style.text} ${style.border} hover:opacity-80 disabled:opacity-50`}
-                                                    >
-                                                        {STATUS_OPTIONS.map(opt => (
-                                                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                                        ))}
-                                                    </select>
-                                                </td>
-                                                <td className="px-3 py-2">
-                                                    <div className="flex flex-col gap-1 text-[11px]">
-                                                        {history.length > 0 ? history.map((h: any, i: number) => (
-                                                            <div key={i} className="flex flex-wrap items-base gap-1 p-1 bg-white border border-slate-200 rounded-sm">
-                                                                <span className="font-bold text-slate-700">
-                                                                    {h.academicYear} ({formatSemester(h.semester, program)}):
-                                                                </span>
-                                                                <span className={`font-bold ${h.status === 'PROMOTED' ? 'text-[#28a745]' :
-                                                                    h.status === 'DETAINED' ? 'text-[#dc3545]' :
-                                                                        h.status === 'DEATH' ? 'text-[#6c757d]' : 'text-[#ffc107]'
-                                                                    }`}>
-                                                                    {h.status}
-                                                                </span>
-                                                                {h.reason && <span className="text-slate-500 italic block w-full">- {h.reason}</span>}
-                                                            </div>
-                                                        )) : (
-                                                            <span className="text-slate-400 italic">No promotion records</span>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                                <td className="px-3 py-2 text-center">
-                                                    <Link to={`/students/${student.id}`}
-                                                        className="inline-flex items-center justify-center p-2 rounded-lg text-primary hover:bg-primary/10 transition-colors tooltip-trigger"
-                                                        title="Edit Student Profile"
-                                                    >
-                                                        <Edit className="w-4 h-4" />
-                                                    </Link>
-                                                </td>
-                                            </tr>
-                                        )
-                                    })
-                                )}
-                            </tbody>
-                        </table>
+                    <div className="w-full flex gap-2">
+                         <button onClick={handleShowStudents} disabled={isLoading} className="erp-btn-rect flex-1 py-2 bg-slate-800 hover:bg-black">
+                            {isLoading ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : "Query Data"}
+                         </button>
+                         <button onClick={exportNominalRollsPdf} disabled={!filteredRolls} className="erp-btn-rect bg-rose-700 hover:bg-rose-800 p-2">
+                            <Printer className="w-4 h-4" />
+                         </button>
                     </div>
                 </div>
             </div>
 
-            <AlertDialog open={confirmDialog.isOpen} onOpenChange={(isOpen: boolean) => !isOpen && setConfirmDialog(prev => ({ ...prev, isOpen: false }))}>
-                <AlertDialogContent>
+            {/* 3. Search Bar Integration */}
+            <div className="px-1 flex justify-between items-center">
+                 <div className="relative w-80">
+                    <Search className="absolute left-2 top-2 w-4 h-4 text-slate-400" />
+                    <input
+                        type="search"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search Identity..."
+                        className="erp-input w-full pl-8 font-bold border-slate-300"
+                    />
+                </div>
+                <div className="text-[10px] font-bold text-slate-400 italic">ERP DATA VERSION: {new Date().toLocaleDateString()}</div>
+            </div>
+
+            {/* 4. Data Registry Table */}
+            <div className="border border-slate-300 rounded shadow-sm overflow-hidden">
+                <div className="overflow-x-auto min-h-[400px]">
+                    <table className="w-full erp-table-dense border-collapse">
+                        <thead className="bg-slate-100 text-slate-600 font-bold">
+                            <tr>
+                                <th className="text-center w-12">SN</th>
+                                <th className="text-left w-32">Roll Number</th>
+                                <th className="text-left">Student Identity</th>
+                                <th className="text-center">Branch</th>
+                                <th className="text-center">Gen</th>
+                                <th className="text-center w-40">Operational Status</th>
+                                <th className="text-left">Promotion History Audit</th>
+                                <th className="text-right w-12 px-3">Act</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {!filteredRolls ? (
+                                <tr><td colSpan={8} className="p-16 text-center italic text-slate-400 animate-pulse">Waiting for selection query...</td></tr>
+                            ) : filteredRolls.length === 0 ? (
+                                <tr><td colSpan={8} className="p-16 text-center font-bold text-slate-400">No matching registry entries found.</td></tr>
+                            ) : filteredRolls.map((row: any, idx: number) => {
+                                const student = row.student;
+                                const dropdownValue = row.currentStatus === 'PROMOTED' ? 'ACTIVE' : (row.currentStatus || 'ACTIVE').toUpperCase();
+                                return (
+                                    <tr key={student.id} className="hover:bg-blue-50/30">
+                                        <td className="text-center font-mono text-slate-400">{idx + 1}</td>
+                                        <td className="font-bold text-[#004b93] font-mono">{student.rollNumber}</td>
+                                        <td className="font-semibold text-slate-700 uppercase truncate max-w-[200px]">{student.name}</td>
+                                        <td className="text-center">{student.branch}</td>
+                                        <td className="text-center text-xs">{student.gender || '—'}</td>
+                                        <td className="px-2">
+                                            <select
+                                                value={dropdownValue}
+                                                onChange={(e) => handleStatusChange(student.id, e.target.value, student.name)}
+                                                className="erp-input w-full h-7 py-0 font-bold uppercase text-[10px] border-slate-200"
+                                            >
+                                                {STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                                            </select>
+                                        </td>
+                                        <td className="py-1">
+                                            <div className="flex flex-col gap-0.5">
+                                                {(row.history || []).map((h: any, i: number) => (
+                                                    <div key={i} className="text-[9px] flex gap-2 border-b border-slate-50 pb-0.5 last:border-0">
+                                                        <span className="font-bold text-slate-400 w-24">{h.academicYear} ({h.semester}):</span>
+                                                        <span className={`font-black ${h.status === 'PROMOTED' ? 'text-emerald-600' : 'text-rose-600'}`}>{h.status}</span>
+                                                    </div>
+                                                ))}
+                                                {(!row.history || row.history.length === 0) && <span className="text-[10px] italic text-slate-400">No History</span>}
+                                            </div>
+                                        </td>
+                                        <td className="text-right px-3">
+                                            <Link to={`/students/${student.id}`} className="text-slate-400 hover:text-[#004b93]"><Edit className="w-4 h-4" /></Link>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <AlertDialog open={confirmDialog.isOpen} onOpenChange={(open: boolean) => !open && setConfirmDialog(prev => ({ ...prev, isOpen: false }))}>
+                <AlertDialogContent className="border-2 border-[#004b93]">
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Change Student Status</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Are you sure you want to change the status of <strong>{confirmDialog.studentName}</strong> to <strong>{confirmDialog.newStatus?.toUpperCase()}</strong>?
-                            This action will be recorded in the student's promotion history for the academic year {academicYear} / {semester}.
+                        <AlertDialogTitle className="text-[#004b93] font-black uppercase">Institutional Status Overwrite</AlertDialogTitle>
+                        <AlertDialogDescription className="text-slate-800 font-medium">
+                            Proceed with changing <b>{confirmDialog.studentName}</b> status to <b className="text-rose-600 underline">{confirmDialog.newStatus}</b>? 
+                            This audit log will be permanently stored for AY {academicYear} / {semester}.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel disabled={statusMutation.isPending}>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={confirmStatusChange}
-                            disabled={statusMutation.isPending}
-                            className="bg-primary hover:bg-primary/90 text-white"
-                        >
-                            {statusMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                            Confirm Change
+                    <AlertDialogFooter className="bg-slate-50 p-3 -mx-6 -mb-6 border-t border-slate-200 mt-4 rounded-b-lg">
+                        <AlertDialogCancel className="erp-btn-rect bg-slate-200 hover:bg-slate-300 !text-slate-700 uppercase font-black text-[10px]">Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmStatusChange} className="erp-btn-rect bg-[#004b93] hover:bg-black !text-white uppercase font-black text-[10px]">
+                            Authorize Change
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -547,5 +333,3 @@ export default function NominalRolls() {
         </div>
     );
 }
-
-

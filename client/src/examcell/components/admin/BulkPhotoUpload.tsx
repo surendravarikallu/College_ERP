@@ -141,7 +141,7 @@ export function BulkPhotoUpload() {
 
                         <label
                             htmlFor="folder-upload"
-                            className="px-6 py-2.5 bg-primary text-white rounded-xl text-sm font-medium hover:opacity-90 transition-all cursor-pointer shadow-sm"
+                            className="px-6 py-2.5 bg-primary text-slate-800 rounded-xl text-sm font-medium hover:opacity-90 transition-all cursor-pointer shadow-sm"
                         >
                             Select Folder
                         </label>

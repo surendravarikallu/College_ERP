@@ -26,7 +26,7 @@ export function BranchSelector({ value, onChange }: { value: string, onChange: (
                 <option value="">All Branches</option>
                 {branches?.map(b => <option key={b} value={b}>{b}</option>)}
             </select>
-            {isLoading && <Loader2 className="w-4 h-4 animate-spin absolute right-3 top-9 text-slate-400 pointer-events-none" />}
+            {isLoading && <Loader2 className="w-4 h-4 animate-spin absolute right-3 top-9 text-slate-600 pointer-events-none" />}
         </div>
     );
 }
@@ -55,7 +55,7 @@ export function ProgramSelector({ value, onChange }: { value: string, onChange: 
                 <option value="">All Programs</option>
                 {programs?.map(p => <option key={p} value={p}>{p}</option>)}
             </select>
-            {isLoading && <Loader2 className="w-4 h-4 animate-spin absolute right-3 top-9 text-slate-400 pointer-events-none" />}
+            {isLoading && <Loader2 className="w-4 h-4 animate-spin absolute right-3 top-9 text-slate-600 pointer-events-none" />}
         </div>
     );
 }
@@ -101,7 +101,7 @@ export function SectionSelector({
                 <option value="">All Sections</option>
                 {sections?.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
-            {isLoading && <Loader2 className="w-4 h-4 animate-spin absolute right-3 top-9 text-slate-400 pointer-events-none" />}
+            {isLoading && <Loader2 className="w-4 h-4 animate-spin absolute right-3 top-9 text-slate-600 pointer-events-none" />}
         </div>
     );
 }
@@ -134,7 +134,7 @@ export function BatchSelector({ value, onChange, hideLabel, className, program }
                     <option key={b} value={b}>{b}</option>
                 ))}
             </select>
-            {isLoading && <Loader2 className="w-4 h-4 animate-spin absolute right-3 top-9 text-slate-400 pointer-events-none" />}
+            {isLoading && <Loader2 className="w-4 h-4 animate-spin absolute right-3 top-9 text-slate-600 pointer-events-none" />}
         </div>
     );
 }
@@ -201,7 +201,7 @@ export function AcYearSelector({ value, onChange, hideLabel, className }: { valu
                 <option value="">All Academic Years</option>
                 {academicYears.map(y => <option key={y} value={y}>{y}</option>)}
             </select>
-            {isLoading && <Loader2 className="w-4 h-4 animate-spin absolute right-3 top-9 text-slate-400 pointer-events-none" />}
+            {isLoading && <Loader2 className="w-4 h-4 animate-spin absolute right-3 top-9 text-slate-600 pointer-events-none" />}
         </div>
     );
 }

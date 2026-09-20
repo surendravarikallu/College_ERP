@@ -1323,7 +1323,7 @@ export default function Reports() {
                 <button onClick={exportBacklogsExcel} disabled={!backlogs?.length} className="flex-1 md:flex-none px-6 py-2.5 rounded-xl font-medium bg-white border border-slate-200 hover:bg-slate-50 hover:text-primary transition-all flex items-center justify-center gap-2 disabled:opacity-50 text-sm">
                   <Download className="w-4 h-4" /> Excel
                 </button>
-                <button onClick={exportBacklogsPDF} disabled={isGeneratingPdf} className="flex-1 md:flex-none px-6 py-2.5 rounded-xl font-medium bg-primary text-white shadow-sm hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50 text-sm">
+                <button onClick={exportBacklogsPDF} disabled={isGeneratingPdf} className="flex-1 md:flex-none px-6 py-2.5 rounded-xl font-medium bg-primary text-slate-800 shadow-sm hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50 text-sm">
                   {isGeneratingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />} PDF
                 </button>
               </div>
@@ -1333,7 +1333,7 @@ export default function Reports() {
               {loadersBacklogs ? (
                 <div className="p-16 flex flex-col items-center"><Loader2 className="w-10 h-10 animate-spin text-primary" /></div>
               ) : !backlogs || backlogs.length === 0 ? (
-                <div className="p-16 flex flex-col items-center"><FileWarning className="w-10 h-10 text-slate-400 mb-4" /><p>No backlogs found</p></div>
+                <div className="p-16 flex flex-col items-center"><FileWarning className="w-10 h-10 text-slate-600 mb-4" /><p>No backlogs found</p></div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
@@ -1389,7 +1389,7 @@ export default function Reports() {
               <ReportTypeSelector />
 
               <div className="flex flex-col sm:flex-row gap-3 w-full sm:col-span-full xl:col-span-full justify-end mt-2">
-                <button onClick={exportCumulativePDF} disabled={isGeneratingPdf || !cumulativeData?.summary} className="flex-1 md:flex-none px-6 py-2.5 rounded-xl font-medium bg-primary text-white shadow-sm hover:opacity-90 flex items-center justify-center gap-2 disabled:opacity-50 text-sm">
+                <button onClick={exportCumulativePDF} disabled={isGeneratingPdf || !cumulativeData?.summary} className="flex-1 md:flex-none px-6 py-2.5 rounded-xl font-medium bg-primary text-slate-800 shadow-sm hover:opacity-90 flex items-center justify-center gap-2 disabled:opacity-50 text-sm">
                   {isGeneratingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />} PDF Report
                 </button>
                 <button onClick={exportCumulativeExcel} disabled={!cumulativeData?.summary} className="flex-1 md:flex-none px-6 py-2.5 rounded-xl font-medium bg-white border border-slate-200 hover:bg-slate-50 hover:text-primary transition-all flex items-center justify-center gap-2 disabled:opacity-50 text-sm">
@@ -1558,7 +1558,7 @@ export default function Reports() {
               <ReportTypeSelector />
 
               <div className="flex flex-col sm:flex-row gap-3 w-full sm:col-span-full xl:col-span-full justify-end mt-2">
-                <button onClick={exportToppersPDF} disabled={isGeneratingPdf || !toppersData?.length} className="flex-1 md:flex-none px-6 py-2.5 rounded-xl font-medium bg-amber-500 text-white shadow-sm hover:opacity-90 flex items-center justify-center gap-2 disabled:opacity-50 text-sm">
+                <button onClick={exportToppersPDF} disabled={isGeneratingPdf || !toppersData?.length} className="flex-1 md:flex-none px-6 py-2.5 rounded-xl font-medium bg-amber-500 text-slate-800 shadow-sm hover:opacity-90 flex items-center justify-center gap-2 disabled:opacity-50 text-sm">
                   {isGeneratingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trophy className="w-4 h-4" />} PDF
                 </button>
                 <button onClick={exportToppersExcel} disabled={!toppersData?.length} className="flex-1 md:flex-none px-6 py-2.5 rounded-xl font-medium bg-white border border-slate-200 hover:bg-slate-50 hover:text-primary transition-all flex items-center justify-center gap-2 disabled:opacity-50 text-sm">
@@ -1620,7 +1620,7 @@ export default function Reports() {
                 <button
                   onClick={exportBulkTranscripts}
                   disabled={isGeneratingPdf || !branch || !batch}
-                  className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-xl font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm shadow-primary/20"
+                  className="flex items-center gap-2 px-6 py-3 bg-primary text-slate-800 rounded-xl font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm shadow-primary/20"
                 >
                   {isGeneratingPdf ? (
                     <>
@@ -1638,7 +1638,7 @@ export default function Reports() {
             </div>
 
             <div className="bg-white border border-slate-100 rounded-3xl shadow-xl shadow-slate-200/40 relative overflow-hidden p-16 text-center">
-              <FileText className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+              <FileText className="w-12 h-12 text-slate-700 mx-auto mb-4" />
               <h3 className="text-lg font-bold text-slate-900 mb-2">Automated Batch Transcripts</h3>
               <p className="text-slate-500 max-w-md mx-auto">
                 Select a Branch and Batch to automatically generate a multi-page PDF document containing the full academic transcript for every student matching the criteria, formatted perfectly to the official Autonomous template.
@@ -1666,7 +1666,7 @@ export default function Reports() {
 
               <div className="flex flex-col sm:flex-row gap-3 w-full sm:col-span-full xl:col-span-full justify-end mt-2">
                 <button onClick={exportConsolidatedPDF} disabled={isGeneratingPdf || !consolidatedData?.sectionSummary?.length}
-                  className="flex-1 md:flex-none px-6 py-2.5 rounded-xl font-medium bg-primary text-white shadow-sm hover:opacity-90 flex items-center justify-center gap-2 disabled:opacity-50 text-sm">
+                  className="flex-1 md:flex-none px-6 py-2.5 rounded-xl font-medium bg-primary text-slate-800 shadow-sm hover:opacity-90 flex items-center justify-center gap-2 disabled:opacity-50 text-sm">
                   {isGeneratingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />} PDF
                 </button>
                 <button onClick={exportConsolidatedExcel} disabled={!consolidatedData?.sectionSummary?.length}
@@ -1744,7 +1744,7 @@ export default function Reports() {
                               <td className="p-3 text-center border">{i + 1}</td>
                               <td className="p-3 border">
                                 <div className="font-medium">{s.subjectName}</div>
-                                <div className="text-xs text-slate-400">{s.subjectCode}</div>
+                                <div className="text-xs text-slate-600">{s.subjectCode}</div>
                               </td>
                               <td className="p-3 border">{s.facultyName || '-'}</td>
                               <td className="p-3 text-center border">{s.registered}</td>
@@ -1848,7 +1848,7 @@ export default function Reports() {
                 <button
                   onClick={!branch ? exportBulkInternalPdf : exportInternalPdf}
                   disabled={isGeneratingPdf || !canFetchInternal || (!!branch && (!internalMarksData || internalMarksData.length === 0))}
-                  className="flex-1 md:flex-none px-6 py-2.5 rounded-xl font-medium bg-primary text-white shadow-sm hover:opacity-90 flex items-center justify-center gap-2 disabled:opacity-50 text-sm"
+                  className="flex-1 md:flex-none px-6 py-2.5 rounded-xl font-medium bg-primary text-slate-800 shadow-sm hover:opacity-90 flex items-center justify-center gap-2 disabled:opacity-50 text-sm"
                 >
                   {isGeneratingPdf ? <><Loader2 className="w-4 h-4 animate-spin" /> {pdfProgress || "PDF"}</> : <><FileText className="w-4 h-4" /> {!branch ? "Bulk PDF" : "PDF"}</>}
                 </button>
@@ -1861,7 +1861,7 @@ export default function Reports() {
               </div>
             ) : !branch && canFetchInternal ? (
               <div className="bg-white border border-slate-100 rounded-3xl p-16 flex flex-col justify-center items-center shadow-sm text-slate-500">
-                <FileText className="w-12 h-12 mb-4 text-slate-300" />
+                <FileText className="w-12 h-12 mb-4 text-slate-700" />
                 <h3 className="text-lg font-medium text-slate-600">Bulk Internal Marks Generation</h3>
                 <p className="text-sm mt-1 max-w-sm text-center">Click <b>Bulk PDF</b> or <b>Bulk Excel</b> to generate internal marks for all {uniqueSubjects.length} subjects.</p>
               </div>
@@ -1958,7 +1958,7 @@ export default function Reports() {
                     <tbody className="divide-y divide-slate-100/60">
                       {filteredInternalMarks.map((row: any, idx: number) => (
                         <tr key={row.rollNumber} className="hover:bg-slate-50/50 transition-colors text-sm">
-                          <td className="p-4 text-center text-slate-400 w-12">{idx + 1}</td>
+                          <td className="p-4 text-center text-slate-600 w-12">{idx + 1}</td>
                           <td className="p-4 font-medium text-slate-700 w-32">{row.rollNumber}</td>
                           <td className="p-4 text-slate-600 truncate max-w-[280px]">{row.name}</td>
 
@@ -2000,7 +2000,7 @@ export default function Reports() {
                               {(internalReportType === 'WITH_QUIZ' || internalReportType === 'WITHOUT_QUIZ_OVERALL') && (
                                 <>
                                   <td className="p-2 border-l border-slate-100 text-center text-indigo-600 bg-indigo-50/30 font-medium">{internalReportType === 'WITH_QUIZ' ? (row.calc?.best ?? '—') : (row.noQuiz.best ?? '—')}</td>
-                                  <td className="p-2 text-center text-indigo-400 bg-indigo-50/30">{internalReportType === 'WITH_QUIZ' ? (row.calc?.least ?? '—') : (row.noQuiz.least ?? '—')}</td>
+                                  <td className="p-2 text-center text-indigo-600 bg-indigo-50/30">{internalReportType === 'WITH_QUIZ' ? (row.calc?.least ?? '—') : (row.noQuiz.least ?? '—')}</td>
                                   <td className="p-2 border-l border-slate-100 text-center text-emerald-600 bg-emerald-50/30">{internalReportType === 'WITH_QUIZ' ? (row.calc?.eightyPercent ?? '—') : (row.noQuiz.eightyPercent ?? '—')}</td>
                                   <td className="p-2 text-center text-emerald-500 bg-emerald-50/30">{internalReportType === 'WITH_QUIZ' ? (row.calc?.twentyPercent ?? '—') : (row.noQuiz.twentyPercent ?? '—')}</td>
                                   <td className="p-2 text-center font-bold text-emerald-700 bg-emerald-50 text-base">{internalReportType === 'WITH_QUIZ' ? (row.calc?.finalInternal ?? '—') : (row.noQuiz.finalInternal ?? '—')}</td>
@@ -2016,12 +2016,12 @@ export default function Reports() {
               </div>
             ) : canFetchInternal ? (
               <div className="bg-white border border-slate-100 rounded-3xl p-16 flex flex-col justify-center items-center shadow-sm text-slate-500">
-                <AlertCircle className="w-8 h-8 mb-3 text-slate-300" />
+                <AlertCircle className="w-8 h-8 mb-3 text-slate-700" />
                 <p>No marks data found for this selection.</p>
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-20 text-slate-400 bg-slate-50/50 rounded-3xl border border-slate-100 border-dashed">
-                <Calculator className="w-12 h-12 mb-4 text-slate-300" />
+              <div className="flex flex-col items-center justify-center py-20 text-slate-600 bg-slate-50/50 rounded-3xl border border-slate-100 border-dashed">
+                <Calculator className="w-12 h-12 mb-4 text-slate-700" />
                 <h3 className="text-lg font-medium text-slate-600">Select filters to View Report</h3>
                 <p className="text-sm mt-1 max-w-sm text-center">Choose Branch, Semester, Subject, and Batch to generate the internal marks report.</p>
               </div>

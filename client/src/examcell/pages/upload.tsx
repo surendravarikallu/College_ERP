@@ -469,7 +469,7 @@ export default function UploadResults() {
               <button
                 type="submit"
                 disabled={!file || isPreviewing}
-                className={`px-8 py-3.5 rounded-xl font-bold text-lg bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex items-center justify-center gap-2 ${isPreviewing ? 'opacity-80 cursor-wait transform-none' : 'disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none'}`}
+                className={`px-8 py-3.5 rounded-xl font-bold text-lg bg-gradient-to-br from-indigo-500 to-purple-600 text-slate-800 shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex items-center justify-center gap-2 ${isPreviewing ? 'opacity-80 cursor-wait transform-none' : 'disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none'}`}
               >
                 {isPreviewing ? (
                   <div className="flex flex-col items-center">
@@ -497,7 +497,7 @@ export default function UploadResults() {
               onSubmit={handleStudentSubmit}
               className="bg-white border border-slate-100 shadow-xl shadow-slate-200/40 p-8 rounded-3xl space-y-8 relative overflow-hidden"
             >
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 to-teal-500"></div>
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-teal-500"></div>
               <div className="space-y-4 relative z-10">
                 <div>
                   <h2 className="text-xl font-display font-bold text-slate-900 mb-1">Upload Master Student Directory</h2>
@@ -577,7 +577,7 @@ export default function UploadResults() {
                 <button
                   type="submit"
                   disabled={!studentFile || isStudentsPending}
-                  className={`px-8 py-3.5 rounded-xl font-bold text-lg bg-slate-900 text-white shadow-lg shadow-slate-900/20 hover:shadow-xl hover:shadow-slate-900/30 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex items-center justify-center gap-2 ${isStudentsPending ? 'opacity-80 cursor-wait transform-none' : 'disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none'}`}
+                  className={`px-8 py-3.5 rounded-xl font-bold text-lg bg-white text-slate-800 shadow-lg shadow-slate-900/20 hover:shadow-xl hover:shadow-slate-900/30 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex items-center justify-center gap-2 ${isStudentsPending ? 'opacity-80 cursor-wait transform-none' : 'disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none'}`}
                 >
                   {isStudentsPending ? (
                     <>
@@ -769,7 +769,7 @@ export default function UploadResults() {
                 <button
                   type="submit"
                   disabled={!midMarksFile || isImportingMidMarks || !branch || !batch || !semester || !midSubjectCode}
-                  className={`px-8 py-3.5 rounded-xl font-bold text-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/30 hover:shadow-blue-500/40 hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 ${isImportingMidMarks ? 'opacity-80 cursor-wait transform-none' : 'disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none'}`}
+                  className={`px-8 py-3.5 rounded-xl font-bold text-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-slate-800 shadow-lg shadow-blue-500/30 hover:shadow-blue-500/40 hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 ${isImportingMidMarks ? 'opacity-80 cursor-wait transform-none' : 'disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none'}`}
                 >
                   {isImportingMidMarks ? (
                     <><Loader2 className="w-5 h-5 animate-spin" /> Importing...</>
@@ -822,7 +822,7 @@ export default function UploadResults() {
 
               {previewData.skippedCount > previewData.matchedCount && (
                 <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl shadow-sm flex items-start gap-3">
-                  <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                  <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                   <div>
                     <h4 className="font-semibold text-amber-800">High Skipped Row Count</h4>
                     <p className="text-sm text-amber-700 mt-1 leading-relaxed">
@@ -889,7 +889,7 @@ export default function UploadResults() {
             <Button
               onClick={handleConfirmUpload}
               disabled={isResultsPending || (previewData && previewData.matchedCount === 0)}
-              className={`rounded-xl px-6 bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md shadow-emerald-500/20 hover:-translate-y-0.5 transition-all outline-none border-none hover:opacity-90 ${isResultsPending ? 'opacity-80' : ''}`}
+              className={`rounded-xl px-6 bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-800 shadow-md shadow-emerald-500/20 hover:-translate-y-0.5 transition-all outline-none border-none hover:opacity-90 ${isResultsPending ? 'opacity-80' : ''}`}
             >
               {isResultsPending ? (
                 <>
