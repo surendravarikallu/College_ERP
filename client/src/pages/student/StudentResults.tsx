@@ -20,10 +20,10 @@ const StudentResults = () => {
           <div>
             <p className="text-xs text-indigo-300 uppercase tracking-wide">Cumulative CGPA</p>
             <p className="text-5xl font-bold mt-2">{cgpa.toFixed(2)}</p>
-            <p className="text-sm text-slate-400 mt-1">Out of 10.00</p>
+            <p className="text-sm text-slate-600 mt-1">Out of 10.00</p>
           </div>
           <div className="p-4 bg-indigo-500/20 rounded-2xl">
-            <Award className="w-10 h-10 text-indigo-400" />
+            <Award className="w-10 h-10 text-indigo-600" />
           </div>
         </div>
       </div>
@@ -31,12 +31,12 @@ const StudentResults = () => {
       {/* Semester Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {semesters.map((sem, i) => (
-          <div key={i} className="bg-slate-900 border border-slate-800 rounded-xl p-5 hover:border-slate-700 transition-colors">
+          <div key={i} className="bg-white border border-slate-200 rounded-xl p-5 hover:border-slate-300 transition-colors">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold flex items-center gap-2">
-                <GraduationCap className="w-4 h-4 text-indigo-400" /> {sem.name}
+                <GraduationCap className="w-4 h-4 text-indigo-600" /> {sem.name}
               </h3>
-              <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${sem.status === 'Published' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}`}>
+              <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${sem.status === 'Published' ? 'bg-emerald-500/15 text-emerald-600' : 'bg-amber-500/15 text-amber-600'}`}>
                 {sem.status}
               </span>
             </div>

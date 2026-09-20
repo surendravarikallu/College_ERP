@@ -53,14 +53,14 @@ const DashboardOverview = () => {
     <>
       <header className="flex justify-between items-center mb-10">
         <div>
-          <h2 className="text-3xl font-bold dark:text-white">Faculty Portal</h2>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">Classes, Attendance, and Exam Grading</p>
+          <h2 className="text-3xl font-bold ">Faculty Portal</h2>
+          <p className="text-slate-500  mt-1">Classes, Attendance, and Exam Grading</p>
         </div>
         <div className="flex gap-3">
-          <button className="bg-brand-600 hover:bg-brand-500 text-white px-5 py-2 rounded-lg font-medium shadow-lg shadow-brand-500/30 transition-all flex items-center gap-2">
+          <button className="bg-brand-600 hover:bg-brand-500 text-slate-800 px-5 py-2 rounded-lg font-medium shadow-lg shadow-brand-500/30 transition-all flex items-center gap-2">
             <CalendarCheck className="w-4 h-4" /> Mark Attendance
           </button>
-          <button className="glass px-4 py-2 rounded-lg font-medium shadow-sm hover:-translate-y-0.5 transition-transform dark:text-white flex items-center gap-2">
+          <button className="bg-white border border-slate-200 shadow-sm px-4 py-2 rounded-lg font-medium shadow-sm hover:-translate-y-0.5 transition-transform  flex items-center gap-2">
             <Upload className="w-4 h-4" /> Upload Marks
           </button>
         </div>
@@ -74,7 +74,7 @@ const DashboardOverview = () => {
           value={String(todayClasses)}
           subtitle="Sessions remaining"
           color="text-brand-500"
-          bgColor="bg-indigo-50 dark:bg-indigo-900/20"
+          bgColor="bg-indigo-50 "
         />
         <MetricCard
           icon={<FileDiff className="w-6 h-6" />}
@@ -82,7 +82,7 @@ const DashboardOverview = () => {
           value={String(gradingBacklog)}
           subtitle="Pending scripts"
           color="text-purple-500"
-          bgColor="bg-purple-50 dark:bg-purple-900/20"
+          bgColor="bg-purple-50 "
         />
         <MetricCard
           icon={<BookOpen className="w-6 h-6" />}
@@ -90,36 +90,36 @@ const DashboardOverview = () => {
           value={String(assignedSubjects.length)}
           subtitle="Current semester"
           color="text-emerald-500"
-          bgColor="bg-emerald-50 dark:bg-emerald-900/20"
+          bgColor="bg-emerald-50 "
         />
         <MetricCard
           icon={<BarChart3 className="w-6 h-6" />}
           title="Avg Performance"
           value="73.7%"
           subtitle="Mock Aggregate"
-          color="text-amber-500"
-          bgColor="bg-amber-50 dark:bg-amber-900/20"
+          color="text-amber-600"
+          bgColor="bg-amber-50 "
         />
       </div>
 
       {/* Today's Classes and Grading Backlog */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        <div className="glass rounded-2xl p-6 border border-slate-200 dark:border-slate-800">
-          <h3 className="text-lg font-bold dark:text-white mb-1 flex items-center gap-2">
+        <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-6 border border-slate-200 ">
+          <h3 className="text-lg font-bold  mb-1 flex items-center gap-2">
             <Clock className="w-5 h-5 text-brand-500" /> Today's Schedule
           </h3>
-          <p className="text-xs text-slate-400 mb-4">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
+          <p className="text-xs text-slate-600 mb-4">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
           <div className="space-y-3">
             {todayClasses.map((c: any, i: number) => (
-              <div key={i} className={'p-4 rounded-xl border-l-4 border-brand-500 bg-slate-50 dark:bg-slate-800/50'}>
+              <div key={i} className={'p-4 rounded-xl border-l-4 border-brand-500 bg-slate-50 '}>
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="text-sm font-bold dark:text-white">{c.subject}</p>
+                    <p className="text-sm font-bold ">{c.subject}</p>
                     <p className="text-xs text-slate-500 mt-1">{c.batch} • {c.room}</p>
                   </div>
                   <div className="text-right">
                     <span className="text-xs font-bold text-brand-500">{c.time}</span>
-                    <button className="mt-1 block ml-auto bg-brand-600 hover:bg-brand-500 text-white text-xs px-3 py-1 rounded-lg font-medium transition-all">
+                    <button className="mt-1 block ml-auto bg-brand-600 hover:bg-brand-500 text-slate-800 text-xs px-3 py-1 rounded-lg font-medium transition-all">
                       Take Attendance
                     </button>
                   </div>
@@ -127,32 +127,32 @@ const DashboardOverview = () => {
               </div>
             ))}
             {todayClasses.length === 0 && (
-              <p className="text-center py-4 text-slate-400 italic">No classes today.</p>
+              <p className="text-center py-4 text-slate-600 italic">No classes today.</p>
             )}
           </div>
         </div>
 
-        <div className="glass rounded-2xl p-6 border border-slate-200 dark:border-slate-800">
-          <h3 className="text-lg font-bold dark:text-white mb-1 flex items-center gap-2">
+        <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-6 border border-slate-200 ">
+          <h3 className="text-lg font-bold  mb-1 flex items-center gap-2">
             <FileDiff className="w-5 h-5 text-purple-500" /> Grading Queue
           </h3>
-          <p className="text-xs text-slate-400 mb-4">Pending evaluation assignments</p>
+          <p className="text-xs text-slate-600 mb-4">Pending evaluation assignments</p>
           <div className="space-y-3">
             {gradingBacklog.map((g: any, i: number) => (
-              <div key={i} className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl flex items-center justify-between">
+              <div key={i} className="p-4 bg-slate-50  rounded-xl flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-bold dark:text-white">{g.exam}</p>
+                  <p className="text-sm font-bold ">{g.exam}</p>
                   <p className="text-xs text-slate-500 mt-1">{g.scripts} scripts • Due: {g.deadline}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button className="bg-purple-600 hover:bg-purple-500 text-white text-xs px-3 py-1.5 rounded-lg font-medium transition-all">
+                  <button className="bg-purple-600 hover:bg-purple-500 text-slate-800 text-xs px-3 py-1.5 rounded-lg font-medium transition-all">
                     Start Grading
                   </button>
                 </div>
               </div>
             ))}
             {gradingBacklog.length === 0 && (
-              <p className="text-center py-4 text-slate-400 italic">No scripts pending.</p>
+              <p className="text-center py-4 text-slate-600 italic">No scripts pending.</p>
             )}
           </div>
         </div>
@@ -160,9 +160,9 @@ const DashboardOverview = () => {
 
       {/* Performance Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 glass rounded-2xl p-6 border border-slate-200 dark:border-slate-800">
-          <h3 className="text-lg font-bold dark:text-white mb-1">Class Performance</h3>
-          <p className="text-xs text-slate-400 mb-4">Attendance vs Marks comparison by subject</p>
+        <div className="lg:col-span-2 bg-white border border-slate-200 shadow-sm rounded-2xl p-6 border border-slate-200 ">
+          <h3 className="text-lg font-bold  mb-1">Class Performance</h3>
+          <p className="text-xs text-slate-600 mb-4">Attendance vs Marks comparison by subject</p>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={classPerformance}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -176,9 +176,9 @@ const DashboardOverview = () => {
           </ResponsiveContainer>
         </div>
 
-        <div className="glass rounded-2xl p-6 border border-slate-200 dark:border-slate-800">
-          <h3 className="text-lg font-bold dark:text-white mb-1">Grade Distribution</h3>
-          <p className="text-xs text-slate-400 mb-4">CS301 Mid-Term results</p>
+        <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-6 border border-slate-200 ">
+          <h3 className="text-lg font-bold  mb-1">Grade Distribution</h3>
+          <p className="text-xs text-slate-600 mb-4">CS301 Mid-Term results</p>
           <ResponsiveContainer width="100%" height={220}>
             <PieChart>
               <Pie data={gradingDistribution} cx="50%" cy="50%" innerRadius={50} outerRadius={85} paddingAngle={3} dataKey="count">
@@ -212,26 +212,26 @@ const MyClassesPage = () => {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold dark:text-white">My Classes</h2>
+      <h2 className="text-2xl font-bold ">My Classes</h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatCard label="Subjects Assigned" value={String(subjects.length)} color="text-brand-500" />
         <StatCard label="Total Students" value={String(subjects.reduce((s, c) => s + c.students, 0))} />
         <StatCard label="Weekly Hours" value="14" />
       </div>
       {subjects.map(s => (
-        <div key={s.code} className="glass rounded-2xl p-6 border border-slate-200 dark:border-slate-800">
+        <div key={s.code} className="bg-white border border-slate-200 shadow-sm rounded-2xl p-6 border border-slate-200 ">
           <div className="flex justify-between items-start">
             <div>
-              <span className="text-xs font-bold text-brand-500 bg-brand-50 dark:bg-brand-900/20 px-2.5 py-1 rounded-full">{s.code}</span>
-              <h3 className="font-bold dark:text-white mt-2 text-lg">{s.name}</h3>
+              <span className="text-xs font-bold text-brand-500 bg-brand-50  px-2.5 py-1 rounded-full">{s.code}</span>
+              <h3 className="font-bold  mt-2 text-lg">{s.name}</h3>
               <p className="text-sm text-slate-500 mt-1">Batch: {s.batch} • {s.students} students</p>
-              <p className="text-xs text-slate-400 mt-1">{s.schedule}</p>
+              <p className="text-xs text-slate-600 mt-1">{s.schedule}</p>
             </div>
             <div className="flex gap-2">
-              <button className="bg-brand-600 hover:bg-brand-500 text-white text-sm px-4 py-2 rounded-lg font-medium transition-all">
+              <button className="bg-brand-600 hover:bg-brand-500 text-slate-800 text-sm px-4 py-2 rounded-lg font-medium transition-all">
                 Mark Attendance
               </button>
-              <button className="glass text-sm px-4 py-2 rounded-lg font-medium dark:text-white">
+              <button className="bg-white border border-slate-200 shadow-sm text-sm px-4 py-2 rounded-lg font-medium ">
                 View Students
               </button>
             </div>
@@ -244,19 +244,19 @@ const MyClassesPage = () => {
 
 const FacultyExamPage = () => (
   <div className="space-y-6">
-    <h2 className="text-2xl font-bold dark:text-white">Exam Grading</h2>
+    <h2 className="text-2xl font-bold ">Exam Grading</h2>
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <StatCard label="Scripts Pending" value="165" color="text-amber-500" />
+      <StatCard label="Scripts Pending" value="165" color="text-amber-600" />
       <StatCard label="Scripts Graded" value="342" color="text-emerald-500" />
       <StatCard label="Moderation Requests" value="3" color="text-purple-500" />
     </div>
-    <div className="glass rounded-2xl p-6 border border-slate-200 dark:border-slate-800">
-      <h3 className="font-bold dark:text-white mb-4">Anonymous Evaluation Queue</h3>
-      <p className="text-xs text-slate-400 mb-4">Scripts are anonymized — student identities are masked during evaluation</p>
+    <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-6 border border-slate-200 ">
+      <h3 className="font-bold  mb-4">Anonymous Evaluation Queue</h3>
+      <p className="text-xs text-slate-600 mb-4">Scripts are anonymized — student identities are masked during evaluation</p>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-slate-200 dark:border-slate-700">
+            <tr className="border-b border-slate-200 ">
               <th className="text-left py-3 px-4 font-semibold text-slate-500">Script ID</th>
               <th className="text-left py-3 px-4 font-semibold text-slate-500">Exam</th>
               <th className="text-left py-3 px-4 font-semibold text-slate-500">Max Marks</th>
@@ -270,9 +270,9 @@ const FacultyExamPage = () => (
               { scriptId: 'SCR-D4E5F2', exam: 'CS301 Mid-Term', max: 100, status: 'ALLOCATED' },
               { scriptId: 'SCR-G8H9I3', exam: 'CS302 Quiz 3', max: 50, status: 'EVALUATED' },
             ].map(s => (
-              <tr key={s.scriptId} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50">
+              <tr key={s.scriptId} className="border-b border-slate-100  hover:bg-slate-50 :bg-slate-50">
                 <td className="py-3 px-4 font-mono text-xs font-bold text-brand-500">{s.scriptId}</td>
-                <td className="py-3 px-4 font-medium dark:text-white">{s.exam}</td>
+                <td className="py-3 px-4 font-medium ">{s.exam}</td>
                 <td className="py-3 px-4 text-slate-500">{s.max}</td>
                 <td className="py-3 px-4">
                   <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
@@ -298,9 +298,9 @@ const FacultyExamPage = () => (
 
 const FacultySettingsPage = () => (
   <div className="space-y-6">
-    <h2 className="text-2xl font-bold dark:text-white">Faculty Settings</h2>
-    <div className="glass rounded-2xl p-6 border border-slate-200 dark:border-slate-800 max-w-lg">
-      <h3 className="font-bold dark:text-white mb-4">Profile Details</h3>
+    <h2 className="text-2xl font-bold ">Faculty Settings</h2>
+    <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-6 border border-slate-200  max-w-lg">
+      <h3 className="font-bold  mb-4">Profile Details</h3>
       <div className="space-y-3">
         {[
           { label: 'Department', value: 'Computer Science' },
@@ -308,9 +308,9 @@ const FacultySettingsPage = () => (
           { label: 'Employee ID', value: 'FAC-CS-0042' },
           { label: 'Specialization', value: 'Algorithms & Data Science' },
         ].map(f => (
-          <div key={f.label} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+          <div key={f.label} className="flex items-center justify-between p-3 bg-slate-50  rounded-xl">
             <span className="text-sm font-medium text-slate-500">{f.label}</span>
-            <span className="text-sm font-bold dark:text-white">{f.value}</span>
+            <span className="text-sm font-bold ">{f.value}</span>
           </div>
         ))}
       </div>
@@ -319,19 +319,19 @@ const FacultySettingsPage = () => (
 );
 
 const MetricCard = ({ icon, title, value, subtitle, color, bgColor }: any) => (
-  <div className="glass p-6 rounded-2xl border border-slate-200 dark:border-slate-800 hover:shadow-xl hover:-translate-y-0.5 transition-all">
+  <div className="bg-white border border-slate-200 shadow-sm p-6 rounded-2xl border border-slate-200  hover:shadow-xl hover:-translate-y-0.5 transition-all">
     <div className={`p-3 rounded-xl w-fit mb-4 ${bgColor}`}>
       <div className={color}>{icon}</div>
     </div>
-    <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">{title}</p>
-    <h4 className="text-3xl font-extrabold dark:text-white">{value}</h4>
-    <p className="text-xs font-medium text-slate-400 mt-1">{subtitle}</p>
+    <p className="text-sm font-medium text-slate-500  mb-1">{title}</p>
+    <h4 className="text-3xl font-extrabold ">{value}</h4>
+    <p className="text-xs font-medium text-slate-600 mt-1">{subtitle}</p>
   </div>
 );
 
-const StatCard = ({ label, value, color = 'text-slate-700 dark:text-white' }: any) => (
-  <div className="glass p-5 rounded-2xl border border-slate-200 dark:border-slate-800">
-    <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">{label}</p>
+const StatCard = ({ label, value, color = 'text-slate-700 ' }: any) => (
+  <div className="bg-white border border-slate-200 shadow-sm p-5 rounded-2xl border border-slate-200 ">
+    <p className="text-sm font-medium text-slate-500  mb-1">{label}</p>
     <h4 className={`text-2xl font-extrabold ${color}`}>{value}</h4>
   </div>
 );

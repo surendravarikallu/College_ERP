@@ -51,13 +51,13 @@ export const StudentLibrary = () => {
         </div>
       </div>
 
-      <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
-        <div className="border-b border-slate-800 px-6 mt-4">
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <div className="border-b border-slate-200 px-6 mt-4">
           <nav className="-mb-px flex space-x-8">
             {(['my-books', 'catalog'] as const).map(tab => (
               <button key={tab} onClick={() => setActiveTab(tab)}
                 className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm capitalize
-                  ${activeTab === tab ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-slate-500 hover:text-slate-300 hover:border-slate-600'}`}>
+                  ${activeTab === tab ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-600'}`}>
                 {tab === 'my-books' ? 'My Books' : 'Search Catalog'}
               </button>
             ))}
@@ -67,20 +67,20 @@ export const StudentLibrary = () => {
         <div className="p-6">
           {activeTab === 'my-books' && (
             loading ? (
-              <div className="flex justify-center py-8"><div className="w-8 h-8 border-2 border-slate-700 border-t-indigo-500 rounded-full animate-spin" /></div>
+              <div className="flex justify-center py-8"><div className="w-8 h-8 border-2 border-slate-300 border-t-indigo-500 rounded-full animate-spin" /></div>
             ) : myBooks.length === 0 ? (
               <div className="text-center py-12">
                 <Book className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-                <p className="text-slate-400 font-medium">No books currently issued</p>
+                <p className="text-slate-600 font-medium">No books currently issued</p>
                 <p className="text-slate-600 text-sm mt-1">Search the catalog to find books</p>
               </div>
             ) : (
               <div className="space-y-3">
                 {myBooks.map((issue: any) => (
-                  <div key={issue.id} className="flex items-center justify-between bg-slate-800/50 rounded-lg p-4">
+                  <div key={issue.id} className="flex items-center justify-between bg-slate-50 rounded-lg p-4">
                     <div className="flex items-center gap-4">
                       <div className="p-2 bg-indigo-500/10 rounded-lg">
-                        <Book className="w-5 h-5 text-indigo-400" />
+                        <Book className="w-5 h-5 text-indigo-600" />
                       </div>
                       <div>
                         <h4 className="font-medium text-sm">{issue.book?.title}</h4>
@@ -88,7 +88,7 @@ export const StudentLibrary = () => {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className={`flex items-center gap-1 text-xs font-medium ${isOverdue(issue.dueDate) ? 'text-red-400' : 'text-slate-400'}`}>
+                      <div className={`flex items-center gap-1 text-xs font-medium ${isOverdue(issue.dueDate) ? 'text-red-400' : 'text-slate-600'}`}>
                         <Clock className="w-3 h-3" />
                         Due: {new Date(issue.dueDate).toLocaleDateString()}
                       </div>
@@ -113,10 +113,10 @@ export const StudentLibrary = () => {
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && searchCatalog()}
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-sm outline-none focus:border-indigo-500"
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm outline-none focus:border-indigo-500"
                   />
                 </div>
-                <button onClick={searchCatalog} className="px-4 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-500">
+                <button onClick={searchCatalog} className="px-4 py-2.5 bg-[#3b82f6] text-white text-sm font-semibold rounded-lg hover:bg-indigo-500">
                   Search
                 </button>
               </div>
@@ -125,7 +125,7 @@ export const StudentLibrary = () => {
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="bg-slate-800/50">
+                      <tr className="bg-slate-50">
                         {['Title', 'Author', 'ISBN', 'Available'].map(h => (
                           <th key={h} className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500">{h}</th>
                         ))}
@@ -133,12 +133,12 @@ export const StudentLibrary = () => {
                     </thead>
                     <tbody>
                       {catalog.map((book: any) => (
-                        <tr key={book.id} className="border-t border-slate-800 hover:bg-slate-800/30">
+                        <tr key={book.id} className="border-t border-slate-200 hover:bg-slate-100">
                           <td className="px-5 py-3.5 text-sm font-medium">{book.title}</td>
-                          <td className="px-5 py-3.5 text-sm text-slate-400">{book.author}</td>
+                          <td className="px-5 py-3.5 text-sm text-slate-600">{book.author}</td>
                           <td className="px-5 py-3.5 text-sm text-slate-500 font-mono">{book.isbn}</td>
                           <td className="px-5 py-3.5">
-                            <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${book.availableCopies > 0 ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'}`}>
+                            <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${book.availableCopies > 0 ? 'bg-emerald-500/15 text-emerald-600' : 'bg-red-500/15 text-red-400'}`}>
                               {book.availableCopies}/{book.totalCopies}
                             </span>
                           </td>

@@ -84,21 +84,21 @@ const FacultyAttendance = () => {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Header */}
-      <div className="p-6 bg-slate-900 border border-slate-800 rounded-2xl">
+      <div className="p-6 bg-white border border-slate-200 rounded-2xl">
         <h2 className="text-2xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent flex items-center gap-3">
-          <ClipboardList className="w-6 h-6 text-indigo-400" /> Mark Attendance
+          <ClipboardList className="w-6 h-6 text-indigo-600" /> Mark Attendance
         </h2>
-        <p className="text-slate-400 mt-1">Select a subject and date to begin marking attendance.</p>
+        <p className="text-slate-600 mt-1">Select a subject and date to begin marking attendance.</p>
       </div>
 
       {/* Controls */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Subject</label>
+          <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Subject</label>
           <select
             value={selectedSubject}
             onChange={e => setSelectedSubject(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+            className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
           >
             <option value="">Select Subject</option>
             {subjects.map(s => (
@@ -108,12 +108,12 @@ const FacultyAttendance = () => {
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Date</label>
+          <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Date</label>
           <input
             type="date"
             value={selectedDate}
             onChange={e => setSelectedDate(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+            className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
           />
         </div>
 
@@ -121,7 +121,7 @@ const FacultyAttendance = () => {
           <button
             onClick={loadStudents}
             disabled={!selectedSubject || loading}
-            className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-xl font-semibold transition-all shadow-lg shadow-indigo-500/20"
+            className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-[#3b82f6] hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-xl font-semibold transition-all shadow-lg shadow-indigo-500/20"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Load Students
           </button>
@@ -130,21 +130,21 @@ const FacultyAttendance = () => {
 
       {/* Student List */}
       {students.length > 0 && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
           {/* Toolbar */}
-          <div className="p-4 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3">
+          <div className="p-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-4">
-              <span className="text-sm text-slate-400">
+              <span className="text-sm text-slate-600">
                 <Users className="w-4 h-4 inline mr-1" />
                 {totalCount} students
               </span>
-              <span className="text-sm text-emerald-400 font-semibold">
+              <span className="text-sm text-emerald-600 font-semibold">
                 <UserCheck className="w-4 h-4 inline mr-1" />
                 {presentCount}/{totalCount} present ({totalCount > 0 ? Math.round((presentCount / totalCount) * 100) : 0}%)
               </span>
             </div>
             <div className="flex gap-2">
-              <button onClick={() => markAll('PRESENT')} className="px-3 py-1.5 bg-emerald-600/20 text-emerald-400 border border-emerald-600/30 rounded-lg text-xs font-semibold hover:bg-emerald-600/30 transition-all">
+              <button onClick={() => markAll('PRESENT')} className="px-3 py-1.5 bg-[#3b82f6]/20 text-emerald-600 border border-emerald-600/30 rounded-lg text-xs font-semibold hover:bg-[#3b82f6]/30 transition-all">
                 All Present
               </button>
               <button onClick={() => markAll('ABSENT')} className="px-3 py-1.5 bg-rose-600/20 text-rose-400 border border-rose-600/30 rounded-lg text-xs font-semibold hover:bg-rose-600/30 transition-all">
@@ -157,18 +157,18 @@ const FacultyAttendance = () => {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-slate-950/50">
-                  <th className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">#</th>
-                  <th className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Roll No</th>
-                  <th className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Name</th>
-                  <th className="text-center px-6 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Status</th>
+                <tr className="bg-[#004b93] text-white">
+                  <th className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">#</th>
+                  <th className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Roll No</th>
+                  <th className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Name</th>
+                  <th className="text-center px-6 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800">
                 {students.map((student, i) => (
-                  <tr key={student.id} className="hover:bg-slate-800/30 transition-colors">
+                  <tr key={student.id} className="hover:bg-slate-100 transition-colors">
                     <td className="px-6 py-3 text-sm text-slate-500">{i + 1}</td>
-                    <td className="px-6 py-3 text-sm font-mono text-slate-300">{student.rollNumber}</td>
+                    <td className="px-6 py-3 text-sm font-mono text-slate-700">{student.rollNumber}</td>
                     <td className="px-6 py-3 text-sm font-medium">{student.name}</td>
                     <td className="px-6 py-3">
                       <div className="flex items-center justify-center gap-2">
@@ -178,10 +178,10 @@ const FacultyAttendance = () => {
                             onClick={() => toggleStatus(student.id, status)}
                             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
                               student.status === status
-                                ? status === 'PRESENT' ? 'bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-500/30'
+                                ? status === 'PRESENT' ? 'bg-[#3b82f6] border-emerald-500 text-white shadow-lg shadow-emerald-500/30'
                                   : status === 'ABSENT' ? 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-500/30'
                                     : 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/30'
-                                : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600'
+                                : 'bg-slate-50 border-slate-300 text-slate-600 hover:border-slate-600'
                             }`}
                           >
                             {status === 'PRESENT' ? <Check className="w-3 h-3 inline mr-1" /> :
@@ -198,11 +198,11 @@ const FacultyAttendance = () => {
           </div>
 
           {/* Submit */}
-          <div className="p-4 border-t border-slate-800 flex justify-end">
+          <div className="p-4 border-t border-slate-200 flex justify-end">
             <button
               onClick={handleSubmit}
               disabled={submitting}
-              className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 text-white rounded-xl font-semibold transition-all shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40"
+              className="flex items-center gap-2 px-6 py-3 bg-[#3b82f6] hover:bg-indigo-500 disabled:bg-slate-700 text-white rounded-xl font-semibold transition-all shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40"
             >
               <Save className="w-4 h-4" /> {submitting ? 'Saving...' : 'Submit Attendance'}
             </button>

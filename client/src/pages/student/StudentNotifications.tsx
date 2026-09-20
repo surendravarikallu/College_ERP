@@ -38,12 +38,12 @@ export const StudentNotifications = () => {
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'ATTENDANCE_ALERT': return 'text-amber-400 bg-amber-500/10';
-      case 'EXAM_RESULT': return 'text-emerald-400 bg-emerald-500/10';
+      case 'ATTENDANCE_ALERT': return 'text-amber-600 bg-amber-500/10';
+      case 'EXAM_RESULT': return 'text-emerald-600 bg-emerald-500/10';
       case 'FEE_REMINDER': return 'text-red-400 bg-red-500/10';
       case 'MARKS_PUBLISHED': return 'text-blue-400 bg-blue-500/10';
       case 'HALL_TICKET': return 'text-purple-400 bg-purple-500/10';
-      default: return 'text-slate-400 bg-slate-500/10';
+      default: return 'text-slate-600 bg-slate-500/10';
     }
   };
 
@@ -57,36 +57,36 @@ export const StudentNotifications = () => {
           </p>
         </div>
         {unreadCount > 0 && (
-          <button onClick={markAllRead} className="flex items-center gap-2 text-sm text-indigo-400 hover:text-indigo-300 font-medium">
+          <button onClick={markAllRead} className="flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-300 font-medium">
             <CheckCheck className="w-4 h-4" /> Mark all read
           </button>
         )}
       </div>
 
-      <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden divide-y divide-slate-800">
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-800">
         {loading ? (
-          <div className="flex justify-center py-16"><div className="w-8 h-8 border-2 border-slate-700 border-t-indigo-500 rounded-full animate-spin" /></div>
+          <div className="flex justify-center py-16"><div className="w-8 h-8 border-2 border-slate-300 border-t-indigo-500 rounded-full animate-spin" /></div>
         ) : notifications.length === 0 ? (
           <div className="text-center py-16">
             <Bell className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-            <p className="text-slate-400 font-medium">No notifications yet</p>
+            <p className="text-slate-600 font-medium">No notifications yet</p>
           </div>
         ) : (
           notifications.map(n => (
-            <div key={n.id} className={`flex items-start gap-4 p-5 transition-colors ${!n.isRead ? 'bg-slate-800/30' : ''} hover:bg-slate-800/20`}>
+            <div key={n.id} className={`flex items-start gap-4 p-5 transition-colors ${!n.isRead ? 'bg-slate-50' : ''} hover:bg-slate-100`}>
               <div className={`p-2 rounded-full mt-0.5 ${getTypeColor(n.type)}`}>
                 <Bell className="w-4 h-4" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <h4 className={`font-medium text-sm ${!n.isRead ? 'text-white' : 'text-slate-400'}`}>{n.title}</h4>
+                  <h4 className={`font-medium text-sm ${!n.isRead ? 'text-slate-800' : 'text-slate-600'}`}>{n.title}</h4>
                   {!n.isRead && <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0" />}
                 </div>
                 <p className="text-sm text-slate-500 mt-0.5 line-clamp-2">{n.message || n.body}</p>
                 <p className="text-xs text-slate-600 mt-1">{new Date(n.createdAt).toLocaleString()}</p>
               </div>
               {!n.isRead && (
-                <button onClick={() => markRead(n.id)} className="shrink-0 p-1.5 rounded-lg hover:bg-slate-700 text-slate-500 hover:text-white">
+                <button onClick={() => markRead(n.id)} className="shrink-0 p-1.5 rounded-lg hover:bg-slate-700 text-slate-500 hover:text-slate-800">
                   <Check className="w-4 h-4" />
                 </button>
               )}

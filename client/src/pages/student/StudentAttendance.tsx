@@ -18,7 +18,7 @@ const StudentAttendance = () => {
     fetch();
   }, []);
 
-  if (loading) return <div className="flex justify-center py-16"><div className="w-8 h-8 border-2 border-slate-700 border-t-indigo-500 rounded-full animate-spin" /></div>;
+  if (loading) return <div className="flex justify-center py-16"><div className="w-8 h-8 border-2 border-slate-300 border-t-indigo-500 rounded-full animate-spin" /></div>;
   if (!data) return <div className="text-center py-16 text-slate-500">Unable to load attendance data.</div>;
 
   const overallPct = data.attendancePct || 0;
@@ -33,19 +33,19 @@ const StudentAttendance = () => {
     <div className="space-y-6">
       {/* Overall */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 col-span-1">
+        <div className="bg-white border border-slate-200 rounded-xl p-6 col-span-1">
           <p className="text-xs text-slate-500 uppercase tracking-wide mb-3">Overall Attendance</p>
           <div className="flex items-end gap-3">
-            <span className={`text-5xl font-bold ${overallPct >= 75 ? 'text-emerald-400' : 'text-red-400'}`}>{overallPct}%</span>
-            {overallPct >= 75 ? <TrendingUp className="w-5 h-5 text-emerald-400 mb-2" /> : <TrendingDown className="w-5 h-5 text-red-400 mb-2" />}
+            <span className={`text-5xl font-bold ${overallPct >= 75 ? 'text-emerald-600' : 'text-red-400'}`}>{overallPct}%</span>
+            {overallPct >= 75 ? <TrendingUp className="w-5 h-5 text-emerald-600 mb-2" /> : <TrendingDown className="w-5 h-5 text-red-400 mb-2" />}
           </div>
-          <div className="w-full h-2 bg-slate-800 rounded-full mt-4 overflow-hidden">
+          <div className="w-full h-2 bg-slate-50 rounded-full mt-4 overflow-hidden">
             <div className={`h-full rounded-full transition-all ${overallPct >= 75 ? 'bg-emerald-500' : 'bg-red-500'}`} style={{ width: `${overallPct}%` }} />
           </div>
           {overallPct < 75 && <p className="text-xs text-red-400 mt-2">⚠️ Below 75% minimum requirement</p>}
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 col-span-2">
+        <div className="bg-white border border-slate-200 rounded-xl p-6 col-span-2">
           <p className="text-xs text-slate-500 uppercase tracking-wide mb-3">Subject-wise Breakdown</p>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={chartData}>
@@ -64,14 +64,14 @@ const StudentAttendance = () => {
       </div>
 
       {/* Subject Table */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
-        <div className="p-4 border-b border-slate-800">
-          <h2 className="text-base font-semibold flex items-center gap-2"><Calendar className="w-4 h-4 text-indigo-400" /> Detailed Attendance</h2>
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <div className="p-4 border-b border-slate-200">
+          <h2 className="text-base font-semibold flex items-center gap-2"><Calendar className="w-4 h-4 text-indigo-600" /> Detailed Attendance</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="bg-slate-800/50">
+              <tr className="bg-slate-50">
                 {['Subject', 'Total Classes', 'Present', 'Absent', 'Percentage'].map(h =>
                   <th key={h} className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500">{h}</th>)}
               </tr>
@@ -82,13 +82,13 @@ const StudentAttendance = () => {
               ) : subjects.map((s: any, i: number) => {
                 const pct = s.attendancePct || chartData[i]?.percentage || 0;
                 return (
-                  <tr key={i} className="border-t border-slate-800 hover:bg-slate-800/30">
+                  <tr key={i} className="border-t border-slate-200 hover:bg-slate-100">
                     <td className="px-5 py-3.5 text-sm font-medium">{s.name || s.code}</td>
-                    <td className="px-5 py-3.5 text-sm text-slate-400">{s.total || '—'}</td>
-                    <td className="px-5 py-3.5 text-sm text-emerald-400">{s.present || '—'}</td>
+                    <td className="px-5 py-3.5 text-sm text-slate-600">{s.total || '—'}</td>
+                    <td className="px-5 py-3.5 text-sm text-emerald-600">{s.present || '—'}</td>
                     <td className="px-5 py-3.5 text-sm text-red-400">{s.absent || '—'}</td>
                     <td className="px-5 py-3.5">
-                      <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${pct >= 75 ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'}`}>{pct}%</span>
+                      <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${pct >= 75 ? 'bg-emerald-500/15 text-emerald-600' : 'bg-red-500/15 text-red-400'}`}>{pct}%</span>
                     </td>
                   </tr>
                 );
