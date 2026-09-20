@@ -378,7 +378,7 @@ export default function Promotions() {
                         <button
                             disabled={isPending || sourceSelection.length === 0}
                             onClick={() => executeAction("leave")}
-                            className="w-full px-4 py-2.5 rounded-xl font-medium bg-gradient-to-br from-slate-700 to-slate-900 text-white shadow-md shadow-slate-500/30 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-50 text-sm whitespace-nowrap mt-1"
+                            className="w-full px-4 py-2.5 rounded-xl font-medium bg-gradient-to-br from-slate-700 to-slate-900 text-slate-800 shadow-md shadow-slate-500/30 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-50 text-sm whitespace-nowrap mt-1"
                         >
                             <LogOut className="w-4 h-4" /> Apply Left
                         </button>
@@ -388,7 +388,7 @@ export default function Promotions() {
                         <button
                             disabled={isPending || sourceSelection.length === 0}
                             onClick={() => executeAction("promote")}
-                            className="w-full px-4 py-3.5 rounded-2xl font-bold bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/30 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-50 text-sm whitespace-nowrap"
+                            className="w-full px-4 py-3.5 rounded-2xl font-bold bg-gradient-to-br from-indigo-500 to-purple-600 text-slate-800 shadow-lg shadow-indigo-500/30 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-50 text-sm whitespace-nowrap"
                         >
                             Promote <ArrowRightCircle className="w-5 h-5" />
                         </button>
@@ -396,7 +396,7 @@ export default function Promotions() {
                         <button
                             disabled={isPending || targetSelection.length === 0}
                             onClick={() => executeAction("demote")}
-                            className="w-full px-4 py-3.5 rounded-2xl font-bold bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg shadow-orange-500/30 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-50 text-sm whitespace-nowrap"
+                            className="w-full px-4 py-3.5 rounded-2xl font-bold bg-gradient-to-br from-amber-400 to-orange-500 text-slate-800 shadow-lg shadow-orange-500/30 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-50 text-sm whitespace-nowrap"
                         >
                             <ArrowLeftCircle className="w-5 h-5" /> DePromote
                         </button>
@@ -418,7 +418,7 @@ export default function Promotions() {
                         <button
                             disabled={isPending || sourceSelection.length === 0}
                             onClick={() => executeAction("detain")}
-                            className="w-full px-4 py-2.5 rounded-xl font-medium bg-gradient-to-br from-red-500 to-rose-600 text-white shadow-md shadow-red-500/30 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-50 text-sm whitespace-nowrap mt-1"
+                            className="w-full px-4 py-2.5 rounded-xl font-medium bg-gradient-to-br from-red-500 to-rose-600 text-slate-800 shadow-md shadow-red-500/30 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-50 text-sm whitespace-nowrap mt-1"
                         >
                             Detain <MinusCircle className="w-4 h-4" />
                         </button>

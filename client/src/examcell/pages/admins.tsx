@@ -65,11 +65,11 @@ function GlobalAutoLockCard() {
                 Controls whether marks are automatically locked after saving. When enabled, all saved marks (MID & Lab) will be immediately locked and cannot be edited by faculty.
             </p>
             {isLoading ? (
-                <div className="flex items-center gap-2 text-slate-400"><Loader2 className="w-4 h-4 animate-spin" /> Loading settings...</div>
+                <div className="flex items-center gap-2 text-slate-600"><Loader2 className="w-4 h-4 animate-spin" /> Loading settings...</div>
             ) : (
                 <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-200">
                     <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isEnabled ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-200 text-slate-400'}`}>
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isEnabled ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-200 text-slate-600'}`}>
                             {isEnabled ? <Lock className="w-5 h-5" /> : <Unlock className="w-5 h-5" />}
                         </div>
                         <div>
@@ -363,7 +363,7 @@ export default function Admins() {
                     </div>
                 ) : !admins || admins.length === 0 ? (
                     <div className="p-16 flex flex-col items-center justify-center text-center">
-                        <ShieldAlert className="w-12 h-12 text-slate-300 mb-4" />
+                        <ShieldAlert className="w-12 h-12 text-slate-700 mb-4" />
                         <h3 className="text-xl font-display font-semibold text-slate-900 mb-2">No admins found</h3>
                     </div>
                 ) : (
@@ -406,7 +406,7 @@ export default function Admins() {
                                                 {admin.canViewReports && !admin.isAdmin && <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full font-medium border border-yellow-200">Reports</span>}
                                                 {admin.canFreezeMarks && !admin.isAdmin && <span className="px-2 py-1 bg-cyan-100 text-cyan-700 text-xs rounded-full font-medium border border-cyan-200">Freeze Controls</span>}
                                                 {admin.loginType === 'IP_BASED' && <span className="px-2 py-1 bg-rose-100 text-rose-700 text-xs rounded-full font-medium border border-rose-200" title={`Allowed IPs: ${admin.allowedIps}`}>Restricted IP</span>}
-                                                {!admin.isAdmin && !admin.canUpload && !admin.canManageSettings && !admin.canManageInternalMarks && !admin.canViewDashboard && !admin.canViewStudents && !admin.canViewReports && !admin.canFreezeMarks && <span className="px-2 py-1 bg-slate-50 text-slate-400 text-xs rounded-full font-medium border border-slate-100">No Access</span>}
+                                                {!admin.isAdmin && !admin.canUpload && !admin.canManageSettings && !admin.canManageInternalMarks && !admin.canViewDashboard && !admin.canViewStudents && !admin.canViewReports && !admin.canFreezeMarks && <span className="px-2 py-1 bg-slate-50 text-slate-600 text-xs rounded-full font-medium border border-slate-100">No Access</span>}
                                             </div>
                                         </td>
                                         <td className="p-4 pr-6 text-right">
@@ -475,7 +475,7 @@ export default function Admins() {
                         </div>
                         <div className="space-y-3 pt-2">
                             <Label className="text-slate-700 font-semibold">Tab Access</Label>
-                            <p className="text-xs text-slate-400">Select which tabs this user can access.</p>
+                            <p className="text-xs text-slate-600">Select which tabs this user can access.</p>
 
                             <div className="rounded-xl border border-slate-200 divide-y divide-slate-100 overflow-y-auto max-h-[350px]">
                                 {/* isAdmin */}
@@ -491,7 +491,7 @@ export default function Admins() {
                                     <Checkbox id="create-can-view-dashboard" checked={canViewDashboard} onCheckedChange={(c: boolean | "indeterminate") => setCanViewDashboard(c === true)} disabled={isAdmin} />
                                     <div>
                                         <Label htmlFor="create-can-view-dashboard" className="font-normal cursor-pointer">Dashboard</Label>
-                                        <p className="text-xs text-slate-400">View college analytics & dashboard</p>
+                                        <p className="text-xs text-slate-600">View college analytics & dashboard</p>
                                     </div>
                                 </div>
                                 {/* canViewStudents */}
@@ -499,7 +499,7 @@ export default function Admins() {
                                     <Checkbox id="create-can-view-students" checked={canViewStudents} onCheckedChange={(c: boolean | "indeterminate") => setCanViewStudents(c === true)} disabled={isAdmin} />
                                     <div>
                                         <Label htmlFor="create-can-view-students" className="font-normal cursor-pointer">Students</Label>
-                                        <p className="text-xs text-slate-400">View student profiles & searches</p>
+                                        <p className="text-xs text-slate-600">View student profiles & searches</p>
                                     </div>
                                 </div>
                                 {/* canViewReports */}
@@ -507,7 +507,7 @@ export default function Admins() {
                                     <Checkbox id="create-can-view-reports" checked={canViewReports} onCheckedChange={(c: boolean | "indeterminate") => setCanViewReports(c === true)} disabled={isAdmin} />
                                     <div>
                                         <Label htmlFor="create-can-view-reports" className="font-normal cursor-pointer">Academic Reports</Label>
-                                        <p className="text-xs text-slate-400">View cumulative/backlog reports</p>
+                                        <p className="text-xs text-slate-600">View cumulative/backlog reports</p>
                                     </div>
                                 </div>
                                 {/* canUpload */}
@@ -515,7 +515,7 @@ export default function Admins() {
                                     <Checkbox id="create-can-upload" checked={canUpload} onCheckedChange={(c: boolean | "indeterminate") => setCanUpload(c === true)} disabled={isAdmin} />
                                     <div>
                                         <Label htmlFor="create-can-upload" className="font-normal cursor-pointer">Data Upload</Label>
-                                        <p className="text-xs text-slate-400">Upload tab</p>
+                                        <p className="text-xs text-slate-600">Upload tab</p>
                                     </div>
                                 </div>
                                 {/* canManageAcademics */}
@@ -523,7 +523,7 @@ export default function Admins() {
                                     <Checkbox id="create-can-academics" checked={canManageAcademics} onCheckedChange={(c: boolean | "indeterminate") => setCanManageAcademics(c === true)} disabled={isAdmin} />
                                     <div>
                                         <Label htmlFor="create-can-academics" className="font-normal cursor-pointer">Promotions &amp; Nominal Roll</Label>
-                                        <p className="text-xs text-slate-400">Promotions tab + Nominal Roll tab</p>
+                                        <p className="text-xs text-slate-600">Promotions tab + Nominal Roll tab</p>
                                     </div>
                                 </div>
                                 {/* canManageInternalMarks */}
@@ -531,7 +531,7 @@ export default function Admins() {
                                     <Checkbox id="create-can-marks" checked={canManageInternalMarks} onCheckedChange={(c: boolean | "indeterminate") => setCanManageInternalMarks(c === true)} disabled={isAdmin} />
                                     <div>
                                         <Label htmlFor="create-can-marks" className="font-normal cursor-pointer">Internal &amp; Lab Marks</Label>
-                                        <p className="text-xs text-slate-400">Internal Marks tab + Lab Internal Marks tab</p>
+                                        <p className="text-xs text-slate-600">Internal Marks tab + Lab Internal Marks tab</p>
                                     </div>
                                 </div>
                                 {/* canManageSettings */}
@@ -539,7 +539,7 @@ export default function Admins() {
                                     <Checkbox id="create-can-manage" checked={canManageSettings} onCheckedChange={(c: boolean | "indeterminate") => setCanManageSettings(c === true)} disabled={isAdmin} />
                                     <div>
                                         <Label htmlFor="create-can-manage" className="font-normal cursor-pointer">Settings &amp; Faculty</Label>
-                                        <p className="text-xs text-slate-400">Settings tab + Faculty Mapping tab</p>
+                                        <p className="text-xs text-slate-600">Settings tab + Faculty Mapping tab</p>
                                     </div>
                                 </div>
                                 {/* canFreezeMarks */}
@@ -547,7 +547,7 @@ export default function Admins() {
                                     <Checkbox id="create-can-freeze" checked={canFreezeMarks} onCheckedChange={(c: boolean | "indeterminate") => setCanFreezeMarks(c === true)} disabled={isAdmin} />
                                     <div>
                                         <Label htmlFor="create-can-freeze" className="font-normal cursor-pointer">Freeze Controls</Label>
-                                        <p className="text-xs text-slate-400">Access to freeze/unfreeze marks</p>
+                                        <p className="text-xs text-slate-600">Access to freeze/unfreeze marks</p>
                                     </div>
                                 </div>
                             </div>
@@ -608,7 +608,7 @@ export default function Admins() {
                         </div>
                         <div className="space-y-3 pt-2">
                             <Label className="text-slate-700 font-semibold">Tab Access</Label>
-                            <p className="text-xs text-slate-400">Select which tabs this user can access.</p>
+                            <p className="text-xs text-slate-600">Select which tabs this user can access.</p>
 
                             <div className="rounded-xl border border-slate-200 divide-y divide-slate-100 overflow-y-auto max-h-[350px]">
                                 {/* isAdmin */}
@@ -624,7 +624,7 @@ export default function Admins() {
                                     <Checkbox id="edit-can-view-dashboard" checked={canViewDashboard} onCheckedChange={(c: boolean | "indeterminate") => setCanViewDashboard(c === true)} disabled={isAdmin} />
                                     <div>
                                         <Label htmlFor="edit-can-view-dashboard" className="font-normal cursor-pointer">Dashboard</Label>
-                                        <p className="text-xs text-slate-400">View college analytics & dashboard</p>
+                                        <p className="text-xs text-slate-600">View college analytics & dashboard</p>
                                     </div>
                                 </div>
                                 {/* canViewStudents */}
@@ -632,7 +632,7 @@ export default function Admins() {
                                     <Checkbox id="edit-can-view-students" checked={canViewStudents} onCheckedChange={(c: boolean | "indeterminate") => setCanViewStudents(c === true)} disabled={isAdmin} />
                                     <div>
                                         <Label htmlFor="edit-can-view-students" className="font-normal cursor-pointer">Students</Label>
-                                        <p className="text-xs text-slate-400">View student profiles & searches</p>
+                                        <p className="text-xs text-slate-600">View student profiles & searches</p>
                                     </div>
                                 </div>
                                 {/* canViewReports */}
@@ -640,7 +640,7 @@ export default function Admins() {
                                     <Checkbox id="edit-can-view-reports" checked={canViewReports} onCheckedChange={(c: boolean | "indeterminate") => setCanViewReports(c === true)} disabled={isAdmin} />
                                     <div>
                                         <Label htmlFor="edit-can-view-reports" className="font-normal cursor-pointer">Academic Reports</Label>
-                                        <p className="text-xs text-slate-400">View cumulative/backlog reports</p>
+                                        <p className="text-xs text-slate-600">View cumulative/backlog reports</p>
                                     </div>
                                 </div>
                                 {/* canUpload */}
@@ -648,7 +648,7 @@ export default function Admins() {
                                     <Checkbox id="edit-can-upload" checked={canUpload} onCheckedChange={(c: boolean | "indeterminate") => setCanUpload(c === true)} disabled={isAdmin} />
                                     <div>
                                         <Label htmlFor="edit-can-upload" className="font-normal cursor-pointer">Data Upload</Label>
-                                        <p className="text-xs text-slate-400">Upload tab</p>
+                                        <p className="text-xs text-slate-600">Upload tab</p>
                                     </div>
                                 </div>
                                 {/* canManageAcademics */}
@@ -656,7 +656,7 @@ export default function Admins() {
                                     <Checkbox id="edit-can-academics" checked={canManageAcademics} onCheckedChange={(c: boolean | "indeterminate") => setCanManageAcademics(c === true)} disabled={isAdmin} />
                                     <div>
                                         <Label htmlFor="edit-can-academics" className="font-normal cursor-pointer">Promotions &amp; Nominal Roll</Label>
-                                        <p className="text-xs text-slate-400">Promotions tab + Nominal Roll tab</p>
+                                        <p className="text-xs text-slate-600">Promotions tab + Nominal Roll tab</p>
                                     </div>
                                 </div>
                                 {/* canManageInternalMarks */}
@@ -664,7 +664,7 @@ export default function Admins() {
                                     <Checkbox id="edit-can-marks" checked={canManageInternalMarks} onCheckedChange={(c: boolean | "indeterminate") => setCanManageInternalMarks(c === true)} disabled={isAdmin} />
                                     <div>
                                         <Label htmlFor="edit-can-marks" className="font-normal cursor-pointer">Internal &amp; Lab Marks</Label>
-                                        <p className="text-xs text-slate-400">Internal Marks tab + Lab Internal Marks tab</p>
+                                        <p className="text-xs text-slate-600">Internal Marks tab + Lab Internal Marks tab</p>
                                     </div>
                                 </div>
                                 {/* canManageSettings */}
@@ -672,7 +672,7 @@ export default function Admins() {
                                     <Checkbox id="edit-can-manage" checked={canManageSettings} onCheckedChange={(c: boolean | "indeterminate") => setCanManageSettings(c === true)} disabled={isAdmin} />
                                     <div>
                                         <Label htmlFor="edit-can-manage" className="font-normal cursor-pointer">Settings &amp; Faculty</Label>
-                                        <p className="text-xs text-slate-400">Settings tab + Faculty Mapping tab</p>
+                                        <p className="text-xs text-slate-600">Settings tab + Faculty Mapping tab</p>
                                     </div>
                                 </div>
                                 {/* canFreezeMarks */}
@@ -680,7 +680,7 @@ export default function Admins() {
                                     <Checkbox id="edit-can-freeze" checked={canFreezeMarks} onCheckedChange={(c: boolean | "indeterminate") => setCanFreezeMarks(c === true)} disabled={isAdmin} />
                                     <div>
                                         <Label htmlFor="edit-can-freeze" className="font-normal cursor-pointer">Freeze Controls</Label>
-                                        <p className="text-xs text-slate-400">Access to freeze/unfreeze marks</p>
+                                        <p className="text-xs text-slate-600">Access to freeze/unfreeze marks</p>
                                     </div>
                                 </div>
                             </div>
@@ -753,7 +753,7 @@ export default function Admins() {
                                 <option value="PROJECT">PROJECT</option>
                             </select>
                         </div>
-                        <Button onClick={() => refetchExams()} disabled={isExamsLoading} className="gap-2 bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-md hover:-translate-y-0.5 transition-all">
+                        <Button onClick={() => refetchExams()} disabled={isExamsLoading} className="gap-2 bg-gradient-to-br from-cyan-500 to-blue-600 text-slate-800 shadow-md hover:-translate-y-0.5 transition-all">
                             {isExamsLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Snowflake className="w-4 h-4" />}
                             Load Subjects
                         </Button>
@@ -792,9 +792,9 @@ export default function Admins() {
                             </thead>
                             <tbody className="divide-y divide-slate-100">
                                 {!exams ? (
-                                    <tr><td colSpan={8} className="p-8 text-center text-slate-400 italic">Click "Load Subjects" to view exams.</td></tr>
+                                    <tr><td colSpan={8} className="p-8 text-center text-slate-600 italic">Click "Load Subjects" to view exams.</td></tr>
                                 ) : exams.length === 0 ? (
-                                    <tr><td colSpan={8} className="p-8 text-center text-slate-400">No exams found for the selected filters.</td></tr>
+                                    <tr><td colSpan={8} className="p-8 text-center text-slate-600">No exams found for the selected filters.</td></tr>
                                 ) : (
                                     exams.map((row: any, i: number) => {
                                         const exam = row.exam;

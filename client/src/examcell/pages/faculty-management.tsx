@@ -233,7 +233,7 @@ export default function FacultyManagement() {
                     disabled={!mappingAcYear || createMapping.isPending}
                 >
                     <span>Select faculty...</span>
-                    <ChevronDown className="w-4 h-4 text-slate-400" />
+                    <ChevronDown className="w-4 h-4 text-slate-600" />
                 </button>
             );
         }
@@ -246,7 +246,7 @@ export default function FacultyManagement() {
         return (
             <div className="absolute top-0 left-0 w-full shadow-lg rounded-lg border border-slate-200 bg-white z-50">
                 <div className="relative border-b border-slate-100">
-                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" />
                     <input
                         type="text"
                         autoFocus
@@ -255,13 +255,13 @@ export default function FacultyManagement() {
                         onChange={(e) => setDropdownSearch(e.target.value)}
                         className="w-full pl-9 pr-8 py-2.5 text-sm outline-none bg-transparent"
                     />
-                    <button onClick={() => setOpenDropdownSubject(null)} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600">
+                    <button onClick={() => setOpenDropdownSubject(null)} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-600 hover:text-slate-600">
                         <X className="w-4 h-4" />
                     </button>
                 </div>
                 <div className="max-h-48 overflow-y-auto py-1">
                     {filtered.length === 0 ? (
-                        <div className="px-4 py-3 text-sm text-slate-400 text-center">No faculty found</div>
+                        <div className="px-4 py-3 text-sm text-slate-600 text-center">No faculty found</div>
                     ) : (
                         filtered.map((f: Faculty) => (
                             <div
@@ -310,7 +310,7 @@ export default function FacultyManagement() {
                                     className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary/20" />
                             </div>
                             <button onClick={handleAddFaculty} disabled={!facultyName.trim() || createFaculty.isPending}
-                                className="w-full px-4 py-2.5 rounded-xl font-medium bg-primary text-white shadow-sm hover:opacity-90 flex items-center justify-center gap-2 disabled:opacity-50 text-sm">
+                                className="w-full px-4 py-2.5 rounded-xl font-medium bg-primary text-slate-800 shadow-sm hover:opacity-90 flex items-center justify-center gap-2 disabled:opacity-50 text-sm">
                                 {createFaculty.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} Add Faculty
                             </button>
                         </div>
@@ -339,14 +339,14 @@ export default function FacultyManagement() {
                                 </div>
                             ) : (
                                 <div className="flex flex-col items-center gap-1">
-                                    <FileUp className="w-6 h-6 text-slate-400" />
+                                    <FileUp className="w-6 h-6 text-slate-600" />
                                     <span className="text-sm text-slate-500">Click to select file</span>
                                 </div>
                             )}
                         </div>
                         {bulkFacultyFile && (
                             <button onClick={() => bulkFacultyMutation.mutate(bulkFacultyFile)} disabled={bulkFacultyMutation.isPending}
-                                className="w-full mt-3 px-4 py-2.5 rounded-xl font-medium bg-primary text-white shadow-sm hover:opacity-90 flex items-center justify-center gap-2 disabled:opacity-50 text-sm">
+                                className="w-full mt-3 px-4 py-2.5 rounded-xl font-medium bg-primary text-slate-800 shadow-sm hover:opacity-90 flex items-center justify-center gap-2 disabled:opacity-50 text-sm">
                                 {bulkFacultyMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
                                 {bulkFacultyMutation.isPending ? 'Importing...' : 'Import Faculty'}
                             </button>
@@ -365,7 +365,7 @@ export default function FacultyManagement() {
                         {loadingFaculty ? (
                             <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
                         ) : !facultyList?.length ? (
-                            <div className="text-center p-8 text-slate-400">No faculty added yet.</div>
+                            <div className="text-center p-8 text-slate-600">No faculty added yet.</div>
                         ) : (
                             <div className="divide-y divide-slate-100 max-h-[500px] overflow-y-auto">
                                 {facultyList.map((f: any) => (
@@ -396,15 +396,15 @@ export default function FacultyManagement() {
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <div className="font-medium text-slate-900 truncate">{f.facultyName}</div>
-                                                    <div className="text-xs text-slate-400 truncate">
+                                                    <div className="text-xs text-slate-600 truncate">
                                                         {[f.department, f.designation].filter(Boolean).join(" · ") || "—"}
                                                     </div>
                                                 </div>
-                                                <button onClick={() => handleStartEdit(f)} className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 opacity-0 group-hover:opacity-100 transition-all">
+                                                <button onClick={() => handleStartEdit(f)} className="p-1.5 rounded-lg text-slate-600 hover:text-blue-600 hover:bg-blue-50 opacity-0 group-hover:opacity-100 transition-all">
                                                     <Edit2 className="w-4 h-4" />
                                                 </button>
                                                 <button onClick={() => { if (confirm(`Delete ${f.facultyName}?`)) deleteFaculty.mutate(f.id); }}
-                                                    className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all">
+                                                    className="p-1.5 rounded-lg text-slate-600 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all">
                                                     <Trash2 className="w-4 h-4" />
                                                 </button>
                                             </>
@@ -495,13 +495,13 @@ export default function FacultyManagement() {
 
                                 {/* Subject Table */}
                                 {!mappingBranch || !mappingSemester ? (
-                                    <div className="text-center p-8 text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                                    <div className="text-center p-8 text-slate-600 bg-slate-50 rounded-xl border border-dashed border-slate-200">
                                         Select a <b>Branch</b> and <b>Semester</b> to load subjects.
                                     </div>
                                 ) : loadingSubjects || loadingFaculty ? (
                                     <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
                                 ) : !subjects?.length ? (
-                                    <div className="text-center p-8 text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                                    <div className="text-center p-8 text-slate-600 bg-slate-50 rounded-xl border border-dashed border-slate-200">
                                         No subjects found for {mappingBranch} {formatSemester(mappingSemester, mappingProgram)}.
                                     </div>
                                 ) : (

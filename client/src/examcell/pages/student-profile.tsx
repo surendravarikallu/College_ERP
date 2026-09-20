@@ -172,7 +172,7 @@ export default function StudentProfile() {
                   }}
                 />
                 {/* Fallback Icon */}
-                <GraduationCap className="w-12 h-12 text-white absolute hidden z-[-1]" style={{ display: 'none' /* handled by error event */ }} />
+                <GraduationCap className="w-12 h-12 text-slate-800 absolute hidden z-[-1]" style={{ display: 'none' /* handled by error event */ }} />
               </div>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md p-0 overflow-hidden bg-transparent border-none shadow-none flex justify-center items-center">
@@ -338,7 +338,7 @@ export default function StudentProfile() {
                       </div>
                       <div className="flex justify-end gap-3 mt-2">
                         <button type="button" onClick={() => setIsEditDialogOpen(false)} className="px-4 py-2 border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 transition-colors font-medium text-sm">Cancel</button>
-                        <button type="submit" disabled={updateStudentMutation.isPending} className="flex items-center justify-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-medium shadow-sm shadow-primary/25 disabled:opacity-50 disabled:cursor-not-allowed text-sm">
+                        <button type="submit" disabled={updateStudentMutation.isPending} className="flex items-center justify-center gap-2 px-4 py-2 bg-primary text-slate-800 rounded-lg hover:bg-primary/90 transition-colors font-medium shadow-sm shadow-primary/25 disabled:opacity-50 disabled:cursor-not-allowed text-sm">
                           {updateStudentMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                           Save Changes
                         </button>
@@ -397,7 +397,7 @@ export default function StudentProfile() {
                     toast({ title: "Failed to generate PDF", variant: "destructive" });
                   }
                 }}
-                className="px-6 py-2.5 rounded-xl bg-slate-900 text-white shadow-sm flex items-center justify-center gap-2 hover:bg-slate-800 transition-colors border border-slate-900"
+                className="px-6 py-2.5 rounded-xl bg-white text-slate-800 shadow-sm flex items-center justify-center gap-2 hover:bg-slate-100 transition-colors border border-slate-900"
               >
                 <FileText className="w-5 h-5" />
                 <span className="text-xs font-semibold whitespace-nowrap">Download PDF</span>
@@ -671,7 +671,7 @@ export default function StudentProfile() {
                                           <span className={isFail ? 'text-destructive font-bold' : 'text-slate-700 font-medium'}>
                                             {baseGrade}{isRev && <sup className="text-red-500 font-bold ml-0.5">(REV)</sup>}
                                           </span>
-                                          <span className="text-[10px] text-slate-400 mt-1 whitespace-nowrap">{a.academicYear}</span>
+                                          <span className="text-[10px] text-slate-600 mt-1 whitespace-nowrap">{a.academicYear}</span>
                                         </div>
                                       );
                                     })()}
@@ -690,7 +690,7 @@ export default function StudentProfile() {
                                           <span className={isFail ? 'text-destructive font-bold' : 'text-slate-600 font-medium'}>
                                             {baseGrade}{isRev && <sup className="text-red-500 font-bold ml-0.5">(REV)</sup>}
                                           </span>
-                                          <span className="text-[10px] text-slate-400 mt-1 whitespace-nowrap">{a.academicYear}</span>
+                                          <span className="text-[10px] text-slate-600 mt-1 whitespace-nowrap">{a.academicYear}</span>
                                         </div>
                                       </td>
                                     );
